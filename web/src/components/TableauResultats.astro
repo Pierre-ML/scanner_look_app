@@ -1,0 +1,79 @@
+---
+/**
+ * Coquille du tableau détaillé page par page. Les lignes sont écrites par
+ * `src/scripts/rapport.js` au fil du polling : le site étant statique, aucune donnée n'est
+ * connue au build.
+ *
+ * Accessibilité du tableau :
+ *   - un `<caption>` décrit son contenu (il peut être masqué visuellement, pas supprimé) ;
+ *   - chaque `<th>` porte un `scope`, sans quoi un lecteur d'écran n'associe pas les
+ *     cellules à leurs en-têtes ;
+ *   - les deux niveaux d'en-tête (bureau / mobile, puis Perf / A11y / BP / SEO) sont liés
+ *     par `colspan` et un second rang de `<th scope="col">`.
+ */
+import Icone from "./Icone.astro";
+---
+
+<div class="overflow-x-auto rounded-box border border-obsidian-border">
+	<table class="w-full min-w-[54rem] border-collapse text-sm">
+		<caption class="sr-only">
+			Résultats détaillés par page : scores Lighthouse bureau et mobile, éco-index et durée
+			de mesure.
+		</caption>
+
+		<thead class="bg-obsidian-card">
+			<tr>
+				<th scope="col" rowspan="2" class="p-3 text-left align-bottom font-titre tracking-wide">
+					Page
+				</th>
+				<th scope="col" rowspan="2" class="p-3 text-left align-bottom font-titre tracking-wide">
+					État
+				</th>
+				<th scope="col" colspan="4" class="border-b border-obsidian-border p-3 text-center">
+					<span class="inline-flex items-center gap-2 font-titre tracking-wide">
+						<Icone nom="bureau" taille={18} classe="text-primary" />
+						Bureau
+					</span>
+				</th>
+				<th scope="col" colspan="4" class="border-b border-l border-obsidian-border p-3 text-center">
+					<span class="inline-flex items-center gap-2 font-titre tracking-wide">
+						<Icone nom="mobile" taille={18} classe="text-primary" />
+						Mobile
+					</span>
+				</th>
+				<th scope="col" rowspan="2" class="border-l border-obsidian-border p-3 text-right align-bottom font-titre tracking-wide">
+					<span class="inline-flex items-center gap-2">
+						<Icone nom="feuille" taille={18} classe="text-primary" />
+						Éco-index
+					</span>
+				</th>
+				<th scope="col" rowspan="2" class="p-3 text-right align-bottom font-titre tracking-wide">
+					<span class="inline-flex items-center gap-2">
+						<Icone nom="chrono" taille={18} classe="text-primary" />
+						Durée
+					</span>
+				</th>
+			</tr>
+			<tr class="libelle-hud">
+				<th scope="col" class="p-2 text-right" title="Performance">Perf</th>
+				<th scope="col" class="p-2 text-right" title="Accessibilité">A11y</th>
+				<th scope="col" class="p-2 text-right" title="Bonnes pratiques">BP</th>
+				<th scope="col" class="p-2 text-right">SEO</th>
+				<th scope="col" class="border-l border-obsidian-border p-2 text-right" title="Performance">
+					Perf
+				</th>
+				<th scope="col" class="p-2 text-right" title="Accessibilité">A11y</th>
+				<th scope="col" class="p-2 text-right" title="Bonnes pratiques">BP</th>
+				<th scope="col" class="p-2 text-right">SEO</th>
+			</tr>
+		</thead>
+
+		<tbody id="lignes-resultats" class="divide-y divide-obsidian-border">
+			<tr>
+				<td colspan="11" class="p-6 text-center text-cream-muted">
+					Aucune page mesurée pour l’instant.
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>

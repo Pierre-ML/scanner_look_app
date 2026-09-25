@@ -1,0 +1,70 @@
+---
+/**
+ * « Cet audit n'est plus disponible » : l'explication, écrite UNE SEULE FOIS.
+ *
+ * Trois endroits l'affichent, et c'est précisément pourquoi elle est ici :
+ *   - `/rapport/[jobId]` et `/decouverte/[jobId]`, quand le fetch serveur reçoit un 404 du
+ *     serveur d'audit — la page répond alors elle-même en 404 ;
+ *   - `/404`, quand l'adresse demandée ressemble à un lien de job mais ne correspond à
+ *     aucune route (`/rapport` sans numéro, numéro non entier…).
+ *
+ * Le texte ne doit pas diverger d'un cas à l'autre : un utilisateur qui voit deux
+ * explications différentes pour la même situation conclut à un bogue.
+ *
+ * Le fond du message : les audits sont enregistrés sur la machine et ne sont jamais supprimés
+ * automatiquement. Un audit introuvable a donc été effacé par l'utilisateur (depuis « Mes
+ * audits », ou en vidant le dossier `data/`), ou le numéro est faux.
+ */
+import Icone from "./Icone.astro";
+
+const {
+	/** Titre du niveau 1. La page 404 générale garde le sien, les pages de job affichent celui-ci. */
+	titre = "Cet audit n’est plus disponible",
+	/** `h1` sur une page dédiée, `h2` quand le bloc est inséré dans une page qui a déjà un titre. */
+	niveau = "h1",
+	/** Rappelé seulement là où l'utilisateur attendait un rapport. */
+	numero = null,
+} = Astro.props;
+
+const Titre = niveau;
+---
+
+<section class="max-w-2xl">
+	<p class="libelle-hud flex items-center gap-2">
+		<Icone nom="info" taille={18} classe="text-primary" />
+		Audit introuvable
+	</p>
+
+	<Titre class="mt-3 text-titre-page leading-tight">{titre}</Titre>
+
+	<div class="mt-6 space-y-4 text-cream-muted">
+		<p>
+			{
+				numero
+					? `L’audit n° ${numero} n’existe pas sur cette machine.`
+					: "L’adresse demandée est celle d’un audit, mais cet audit n’existe pas sur cette machine."
+			}
+		</p>
+		<p>
+			Les audits sont enregistrés localement, dans le dossier
+			<strong class="text-cream">data/</strong> du projet, et ne sont jamais supprimés
+			automatiquement. Celui-ci a sans doute été effacé depuis « Mes audits », ou le dossier
+			<code>data/</code> a été vidé. Le numéro a aussi pu être mal recopié.
+		</p>
+		<p>
+			Pour obtenir de nouveau ces mesures, il faut relancer un audit : les résultats seront
+			recalculés sur l’état actuel du site, et peuvent donc différer des précédents.
+		</p>
+	</div>
+
+	<div class="mt-8 flex flex-wrap gap-3">
+		<a href="/" class="btn btn-primary gap-2">
+			<Icone nom="loupe" taille={20} />
+			Lancer un audit
+		</a>
+		<a href="/mes-audits" class="btn btn-ghost gap-2">
+			<Icone nom="document" taille={20} classe="text-primary" />
+			Mes audits
+		</a>
+	</div>
+</section>

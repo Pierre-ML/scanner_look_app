@@ -1,0 +1,26 @@
+{
+  "name": "eco-audit",
+  "version": "1.0.0",
+  "description": "Audit local de performance, d'accessibilité et d'éco-conception (Lighthouse bureau/mobile + estimation EcoIndex), avec votre propre Chrome",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently --kill-others --names serveur,web --prefix-colors green,cyan \"npm:dev:serveur\" \"npm:dev:web\"",
+    "dev:serveur": "npm run dev --workspace server",
+    "dev:web": "npm run dev --workspace web"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  },
+  "allowScripts": {
+    "esbuild": true
+  }
+}

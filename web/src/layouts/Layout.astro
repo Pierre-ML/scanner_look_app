@@ -1,0 +1,165 @@
+---
+/**
+ * Gabarit unique du site.
+ *
+ * Porte les trois éléments qu'aucune page ne doit pouvoir oublier : le lien d'évitement,
+ * le repère `#contenu` sur lequel il pointe, et le pied de page construit depuis
+ * `identite.js`.
+ */
+import "../styles/global.css";
+import { DEPOT, SITE, EDITEUR } from "../lib/identite.js";
+import Icone from "../components/Icone.astro";
+import Logo from "../components/Logo.astro";
+
+const {
+	titre,
+	description = SITE.description,
+	/**
+	 * Les pages de job (`/rapport`, `/decouverte`) affichent un état qui change en continu :
+	 * les remettre en cache servirait un avancement périmé, ou un rapport vide là où
+	 * l'audit est terminé. L'API répond déjà `cache-control: no-store` sur ses routes, mais
+	 * cela ne couvre pas le document HTML lui-même.
+	 */
+	sansCache = false,
+	/** Largeur de page élargie (rapport, tableau de huit colonnes de scores). */
+	large = false,
+	/** Le monogramme de l'en-tête se dessine à l'arrivée : réservé à l'accueil. */
+	logoAnime = false,
+} = Astro.props;
+
+/** Chemin courant, pour signaler la page active dans la navigation (`aria-current`). */
+const chemin = Astro.url.pathname;
+
+const titreComplet = titre ? `${titre} — ${SITE.nom}` : SITE.titre;
+---
+
+<!doctype html>
+<html lang="fr" data-theme="obsidian">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{titreComplet}</title>
+		<meta name="description" content={description} />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+		{
+			/*
+			 * Sur un site statique, il n'y a pas de serveur Astro pour poser un en-tête :
+			 * l'équivalent est cette balise, doublée par la consigne de configuration du
+			 * serveur statique documentée dans le README (`Cache-Control: no-store` sur
+			 * /rapport/* et /decouverte/*). La balise couvre le cache du navigateur, l'en-tête
+			 * couvre les caches intermédiaires.
+			 */
+			sansCache && (
+				<>
+					<meta http-equiv="cache-control" content="no-store, no-cache, must-revalidate" />
+					<meta http-equiv="pragma" content="no-cache" />
+					<meta http-equiv="expires" content="0" />
+					<meta name="robots" content="noindex, nofollow" />
+				</>
+			)
+		}
+
+		{/* La police est chargée par `@font-face` ; le préchargement évite le saut de texte. */}
+		<link rel="preload" href="/fonts/surgena.ttf" as="font" type="font/ttf" crossorigin />
+	</head>
+
+	<body class="fond-hud flex min-h-dvh flex-col bg-base-100 text-base-content antialiased">
+		{/*
+		 * Lien d'évitement : premier élément focusable du document, avant toute navigation.
+		 * Sa position hors écran et son retour au focus sont dans `global.css`.
+		 */}
+		<a href="#contenu" class="lien-evitement btn btn-secondary btn-sm">Aller au contenu</a>
+
+		{/*
+		 * En-tête collant, sur un voile flouté : la navigation reste à portée pendant la lecture
+		 * d'un long rapport, sans masquer le texte qui défile dessous.
+		 */}
+		<header class="sticky top-0 z-40 border-b filet bg-obsidian/80 backdrop-blur-md">
+			<div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+				<a href="/" class="group flex items-center gap-3" aria-label={`${SITE.nom} — accueil`}>
+					<Logo mode={logoAnime ? "entree" : "fixe"} classe="h-7 w-auto text-cream transition-colors duration-200 group-hover:text-cream-muted" />
+					{/* Le nom s'efface sous `sm` : sur un téléphone, le monogramme et la navigation suffisent. */}
+					<span class="hidden h-5 w-px bg-obsidian-border sm:block" aria-hidden="true"></span>
+					<span class="hidden font-titre text-lg tracking-wide sm:inline">{SITE.nom}</span>
+				</a>
+				<nav aria-label="Navigation principale">
+					<ul class="flex items-center gap-1 text-sm">
+						<li>
+							<a
+								href="/"
+								aria-current={chemin === "/" ? "page" : undefined}
+								class="btn btn-ghost btn-sm gap-2 font-normal aria-[current=page]:text-cream text-cream-muted"
+							>
+								<Icone nom="loupe" taille={16} classe="text-primary" />
+								<span class="hidden sm:inline">Nouvel audit</span>
+								<span class="sm:hidden">Auditer</span>
+							</a>
+						</li>
+						<li>
+							<a
+								href="/mes-audits"
+								aria-current={chemin.startsWith("/mes-audits") ? "page" : undefined}
+								class="btn btn-ghost btn-sm gap-2 font-normal aria-[current=page]:text-cream text-cream-muted"
+							>
+								<Icone nom="document" taille={16} classe="text-primary" />
+								Mes audits
+								{/* Rempli par le script ci-dessous : le nombre vient du serveur local. */}
+								<span data-compteur-audits hidden class="badge badge-sm border-obsidian-border bg-obsidian-hover text-cream chiffres"></span>
+							</a>
+						</li>
+					</ul>
+				</nav>
+			</div>
+		</header>
+
+		{/* `tabindex="-1"` : sans lui, Safari déplace l'ancre sans déplacer le focus. */}
+		<main id="contenu" tabindex="-1" class:list={["mx-auto w-full flex-1 px-4 sm:px-6", large ? "max-w-6xl" : "max-w-5xl", "py-10 sm:py-14"]}>
+			<slot />
+		</main>
+
+		<footer class="mt-16 border-t filet">
+			<div
+				class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-cream-dark sm:flex-row sm:items-center sm:justify-between sm:px-6"
+			>
+				<p class="flex items-center gap-3">
+					<Logo classe="h-5 w-auto text-cream-dark" />
+					<span>
+						Conçu par{" "}
+						<a href={EDITEUR.site} class="text-cream-muted hover:text-cream hover:underline">{EDITEUR.nom}</a>
+						{" "}— {EDITEUR.ville}
+					</span>
+				</p>
+				<ul class="flex flex-wrap gap-x-4 gap-y-1">
+					<li>Outil local : aucune donnée ne quitte votre machine</li>
+					<li>
+						<a href={DEPOT.url} class="hover:text-cream hover:underline">
+							Code source ({DEPOT.licence})
+						</a>
+					</li>
+				</ul>
+			</div>
+		</footer>
+
+		<script>
+			/*
+			 * Pastille « Mes audits » : le nombre d'audits enregistrés par le serveur local.
+			 * Lu ici plutôt qu'au rendu, parce que la plupart des pages sont pré-générées. Un
+			 * serveur injoignable laisse simplement la pastille masquée.
+			 */
+			import { routes } from "../lib/api.js";
+
+			const pastille = document.querySelector("[data-compteur-audits]");
+			fetch(routes.historique(), { headers: { Accept: "application/json" }, cache: "no-store" })
+				.then((reponse) => (reponse.ok ? reponse.json() : null))
+				.then((corps) => {
+					const nombre = Array.isArray(corps?.jobs) ? corps.jobs.length : 0;
+					if (pastille && nombre > 0) {
+						pastille.textContent = String(nombre);
+						pastille.hidden = false;
+					}
+				})
+				.catch(() => {});
+		</script>
+	</body>
+</html>

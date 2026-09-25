@@ -1,0 +1,77 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Icone from "../components/Icone.astro";
+import AuditIndisponible from "../components/AuditIndisponible.astro";
+
+/**
+ * Page 404 générale.
+ *
+ * `prerender = true` : explicite, bien que ce soit déjà le défaut en `output: 'static'`.
+ * L'écrire noir sur blanc évite qu'un futur passage à `output: 'server'` ne fasse basculer
+ * cette page — purement fixe — vers un rendu à la demande.
+ *
+ * Depuis le passage en rendu à la demande de `/rapport/[jobId]` et `/decouverte/[jobId]`, un
+ * audit supprimé n’arrive plus ici : ces routes répondent elles-mêmes en 404, avec le même
+ * composant `AuditIndisponible`. Cette page ne reçoit donc plus que les adresses qui ne
+ * correspondent à aucune route — dont les liens de job malformés (`/rapport` sans numéro,
+ * numéro non entier), d'où le maintien du discours adapté.
+ */
+export const prerender = true;
+---
+
+<Layout titre="Page introuvable" sansCache={true}>
+	{/* ------------------------- adresse quelconque : explication générale */}
+	<section id="cas-general" class="max-w-2xl">
+		<p class="libelle-hud flex items-center gap-2">
+			<Icone nom="info" taille={18} classe="text-primary" />
+			Erreur 404
+		</p>
+
+		<h1 class="mt-3 text-titre-page leading-tight">Cette page n’existe pas</h1>
+
+		<p class="mt-6 text-cream-muted">
+			L’adresse demandée ne correspond à aucune page du site. Elle a peut-être été mal
+			recopiée, ou le lien qui vous a amené ici est périmé.
+		</p>
+
+		<div class="mt-8 flex flex-wrap gap-3">
+			<a href="/" class="btn btn-primary gap-2">
+				<Icone nom="loupe" taille={20} />
+				Lancer un audit
+			</a>
+		</div>
+	</section>
+
+	{/*
+	 * -------------------- adresse ressemblant à un lien de job
+	 *
+	 * Même composant que les pages de job en 404 : l’explication n’est écrite qu’une fois.
+	 */}
+	<div id="cas-job" hidden>
+		<AuditIndisponible titre="Cet audit n’est plus disponible" niveau="h1" />
+	</div>
+</Layout>
+
+<script>
+	/**
+	 * Adapte le discours à l'adresse demandée.
+	 *
+	 * Cette page est pré-générée : elle ne sait rien de la requête côté serveur, mais
+	 * `location.pathname` suffit à distinguer un lien de job malformé d'une faute de frappe
+	 * quelconque. Sans JavaScript, c'est l'explication générale qui reste affichée — elle est
+	 * vraie dans tous les cas, simplement moins précise.
+	 *
+	 * À noter : un audit supprimé ne passe plus par ici. `/rapport/42` est une route rendue à la
+	 * demande, qui répond elle-même en 404 avec le bon texte, sans dépendre de JavaScript.
+	 */
+	const estLienJob = /^\/(rapport|decouverte)(\/|$)/.test(window.location.pathname);
+
+	const casGeneral = document.getElementById("cas-general");
+	const casJob = document.getElementById("cas-job");
+
+	if (estLienJob && casGeneral && casJob) {
+		casGeneral.hidden = true;
+		casJob.hidden = false;
+		document.title = "Cet audit n’est plus disponible — eco-audit";
+	}
+</script>

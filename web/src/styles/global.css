@@ -1,0 +1,452 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+/*
+ * daisyUI 5, branché sur la palette du portfolio.
+ *
+ * `themes: false` coupe les thèmes livrés : le site n'en a qu'un. Le thème `obsidian`
+ * fait pointer les couleurs sémantiques de daisyUI sur les jetons définis dans `@theme`,
+ * pour que la répartition 60 / 30 / 10 tienne sans une classe de couleur dans le markup :
+ *   base-*                    -> les noirs obsidian (60 %)
+ *   base-content / secondary  -> la crème (30 %)
+ *   primary / accent          -> le carmin (10 %), DÉCORATIF UNIQUEMENT
+ *
+ * Les valeurs sont recopiées en clair : le plugin lit ce bloc avant que `@theme` ne soit
+ * résolu, une référence `var()` y serait vide.
+ */
+@plugin "daisyui" {
+	themes: false;
+}
+
+@plugin "daisyui/theme" {
+	name: "obsidian";
+	default: true;
+	prefersdark: true;
+	color-scheme: dark;
+
+	--color-base-100: #070605;
+	--color-base-200: #110f0d;
+	--color-base-300: #1c1815;
+	--color-base-content: #f7f2e8;
+
+	--color-primary: #7a0c0d;
+	--color-primary-content: #f7f2e8;
+	--color-secondary: #f7f2e8;
+	--color-secondary-content: #070605;
+	--color-accent: #9e1012;
+	--color-accent-content: #f7f2e8;
+	--color-neutral: #26211c;
+	--color-neutral-content: #c5bdad;
+
+	/*
+	 * États. Contrairement au portfolio, `error` NE retombe PAS sur le carmin : sur
+	 * l'obsidian, #9e1012 plafonne à 2,45:1 de contraste, très en dessous du 4.5:1
+	 * exigé par WCAG AA pour du texte. Un message d'erreur doit rester lisible, donc
+	 * `error` est un rose clair (#ff9d9f, ~8:1 sur l'obsidian) et le carmin reste
+	 * cantonné aux icônes et aplats décoratifs (`primary`, `accent`).
+	 */
+	--color-info: #b9b0a0;
+	--color-info-content: #070605;
+	--color-success: #3ddc97;
+	--color-success-content: #070605;
+	--color-warning: #f0bf5e;
+	--color-warning-content: #070605;
+	--color-error: #ff9d9f;
+	--color-error-content: #070605;
+
+	--radius-selector: 2rem;
+	--radius-field: 2rem;
+	--radius-box: 1rem;
+
+	--size-selector: 0.25rem;
+	--size-field: 0.25rem;
+
+	--border: 1px;
+
+	--depth: 0;
+	--noise: 0;
+}
+
+@font-face {
+	font-family: "Surgena";
+	src: url("/fonts/surgena.ttf") format("truetype");
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}
+
+@theme {
+	/* Palette du portfolio : 60 % obsidian, 30 % crème ivoire, 10 % carmin. */
+	--color-obsidian: #070605;
+	--color-obsidian-card: #110f0d;
+	--color-obsidian-hover: #1c1815;
+	--color-obsidian-border: #26211c;
+
+	--color-cream: #f7f2e8;
+	--color-cream-muted: #c5bdad;
+	--color-cream-dark: #8c8271;
+
+	/*
+	 * Carmin. Réservé aux icônes et aplats décoratifs : 2,45:1 sur l'obsidian, donc
+	 * jamais de texte lisible dessus ni écrit avec. Pour du texte d'état, voir
+	 * `--color-alerte` et `--color-echec` ci-dessous.
+	 */
+	--color-crimson: #7a0c0d;
+	--color-crimson-hover: #9e1012;
+	--color-crimson-glow: rgba(122, 12, 13, 0.25);
+
+	/*
+	 * Couleurs de TEXTE d'état, toutes vérifiées ≥ 4.5:1 sur #070605 :
+	 *   --color-echec   #ff9d9f  ~ 8,6:1
+	 *   --color-alerte  #f0bf5e  ~ 10,8:1
+	 *   --color-ok      #3ddc97  ~ 11,4:1
+	 */
+	--color-echec: #ff9d9f;
+	--color-alerte: #f0bf5e;
+	--color-ok: #3ddc97;
+
+	--font-surgena: "Surgena", sans-serif;
+	--font-titre: var(--font-surgena);
+	--font-inter: "Inter", system-ui, sans-serif;
+	--font-corps: var(--font-inter);
+
+	--text-nano: 0.625rem;
+	--text-micro: 0.6875rem;
+	--text-legal: clamp(1.75rem, 3.4vw, 2.5rem);
+	--text-titre-page: clamp(2rem, 5vw, 3.5rem);
+
+	--tracking-hud: 0.2em;
+	--tracking-hud-large: 0.25em;
+
+	--ease-douce: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ------------------------------------------------------------------ base */
+
+html {
+	scroll-behavior: smooth;
+}
+
+body {
+	font-family: var(--font-corps);
+	background-color: var(--color-obsidian);
+	color: var(--color-cream);
+}
+
+h1,
+h2,
+h3 {
+	font-family: var(--font-titre);
+	letter-spacing: 0.02em;
+}
+
+/*
+ * Anneau de focus, posé une fois pour toute l'interface.
+ *
+ * `:focus-visible` et non `:focus` : la souris ne déclenche pas l'anneau, le clavier si.
+ * La couleur est la crème et non le carmin — un anneau doit se voir, et le carmin sur
+ * l'obsidian ne se voit pas. Le double liseré (crème puis obsidian) garantit que l'anneau
+ * reste visible même sur un aplat clair, comme un bouton `btn-secondary`.
+ *
+ * Aucune règle `outline: none` n'existe ailleurs dans cette feuille : si un composant
+ * daisyUI en pose une, elle est annulée ici.
+ */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+	outline: 2px solid var(--color-cream);
+	outline-offset: 2px;
+	border-radius: 0.25rem;
+}
+
+/*
+ * Cases à cocher, partout : CARRÉES.
+ *
+ * Une forme ronde se lit comme un bouton radio, c'est-à-dire « un choix parmi
+ * plusieurs ». Or les cases de la sélection de pages
+ * sont cumulables : la ronde mentirait sur le comportement. daisyUI
+ * donne à `.checkbox` le rayon de `--radius-selector` (2rem) : on le ramène à un carré
+ * légèrement adouci.
+ */
+.checkbox {
+	border-radius: 0.25rem;
+}
+
+/* ---------------------------------------------- lien d'évitement */
+
+/*
+ * « Aller au contenu » : hors écran tant qu'il n'a pas le focus, puis ramené en haut
+ * à gauche. Il n'est pas `display: none` — un lecteur d'écran et la touche Tab doivent
+ * pouvoir l'atteindre.
+ */
+.lien-evitement {
+	position: fixed;
+	top: 0.5rem;
+	left: 0.5rem;
+	z-index: 100;
+	translate: 0 -200%;
+	transition: translate 150ms var(--ease-douce);
+}
+
+.lien-evitement:focus-visible {
+	translate: 0 0;
+}
+
+/* --------------------------------------- mouvement réduit */
+
+/*
+ * `prefers-reduced-motion` : toute animation et toute transition sont coupées, y compris
+ * celles des composants daisyUI et le défilement doux. La durée est mise à 0,01 ms et non
+ * à 0 pour que les gestionnaires `animationend` / `transitionend` se déclenchent quand
+ * même — à 0, certains navigateurs ne les émettent jamais et un script reste bloqué.
+ */
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* -------------------------------------------------- utilitaires */
+
+/* Libellé en capitales espacées du HUD, repris du portfolio. */
+.libelle-hud {
+	font-family: var(--font-corps);
+	font-size: var(--text-micro);
+	letter-spacing: var(--tracking-hud);
+	text-transform: uppercase;
+	color: var(--color-cream-dark);
+}
+
+/* Filet fin : le séparateur du site, plutôt qu'une ombre. */
+.filet {
+	border-color: var(--color-obsidian-border);
+}
+
+/* ============================================================ identité visuelle
+ *
+ * Reprise du portfolio : grille de points du HUD, lueur carmin, monogramme PML qui se
+ * dessine lettre par lettre. Tout ce qui bouge ici passe par `transform`, `opacity` ou
+ * `clip-path` — jamais une propriété qui recalcule la mise en page.
+ */
+
+/* Fond du site : grille de points du HUD, estompée vers les bords, et une lueur carmin très
+   basse en haut de page. Posée sur un pseudo-élément fixe pour ne pas défiler avec le texte. */
+.fond-hud {
+	position: relative;
+	isolation: isolate;
+}
+
+.fond-hud::before {
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background-image:
+		radial-gradient(60% 45% at 50% -8%, rgb(122 12 13 / 0.22), transparent 70%),
+		radial-gradient(rgb(247 242 232 / 0.06) 1px, transparent 1px);
+	background-size:
+		100% 100%,
+		24px 24px;
+	mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+}
+
+/* Repères de coin « [ + ] » du HUD, en filigrane. */
+.repere-hud {
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: var(--text-micro);
+	letter-spacing: -0.02em;
+	color: rgb(197 189 173 / 0.25);
+	user-select: none;
+}
+
+/* --------------------------------------------------------------- monogramme PML */
+
+.logo-pml path {
+	transform-box: fill-box;
+}
+
+/* Entrée unique : P, M, L montent en fondu, puis le socle se découvre de bas en haut. */
+.logo-entree .logo-p,
+.logo-entree .logo-m,
+.logo-entree .logo-l {
+	animation: logo-lettre 600ms var(--ease-douce) both;
+}
+.logo-entree .logo-p { animation-delay: 60ms; }
+.logo-entree .logo-m { animation-delay: 200ms; }
+.logo-entree .logo-l { animation-delay: 340ms; }
+.logo-entree .logo-base {
+	animation: logo-socle 520ms var(--ease-douce) 560ms both;
+}
+
+/* Boucle du chargeur : la même révélation, en aller-retour. `alternate` plutôt qu'une
+   remise à zéro brutale ; sous mouvement réduit, une seule itération finit sur le logo plein. */
+.logo-boucle .logo-p,
+.logo-boucle .logo-m,
+.logo-boucle .logo-l {
+	animation: logo-lettre-boucle 1600ms var(--ease-douce) infinite alternate both;
+}
+.logo-boucle .logo-p { animation-delay: 0ms; }
+.logo-boucle .logo-m { animation-delay: 160ms; }
+.logo-boucle .logo-l { animation-delay: 320ms; }
+.logo-boucle .logo-base {
+	animation: logo-socle-boucle 1600ms var(--ease-douce) 480ms infinite alternate both;
+}
+
+@keyframes logo-lettre {
+	from { opacity: 0; transform: translateY(18%); }
+	to   { opacity: 1; transform: none; }
+}
+
+@keyframes logo-socle {
+	from { clip-path: inset(100% 0 0 0); }
+	to   { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes logo-lettre-boucle {
+	0%        { opacity: 0.08; transform: translateY(14%); }
+	45%, 100% { opacity: 1; transform: none; }
+}
+
+@keyframes logo-socle-boucle {
+	0%        { clip-path: inset(100% 0 0 0); }
+	45%, 100% { clip-path: inset(0 0 0 0); }
+}
+
+/* ------------------------------------------------------------------ apparition */
+
+/* Montée en fondu au chargement, décalée par `--retard` : 1 ou 2 éléments clés par vue. */
+.apparition {
+	animation: apparition 700ms var(--ease-douce) var(--retard, 0ms) both;
+}
+
+@keyframes apparition {
+	from { opacity: 0; transform: translateY(12px); }
+	to   { opacity: 1; transform: none; }
+}
+
+/* ---------------------------------------------------------------------- chargeur */
+
+/* Balayage de radar derrière le logo : un cône carmin qui tourne. */
+.radar-balayage {
+	background: conic-gradient(from 0deg, transparent 0deg, rgb(158 16 18 / 0.35) 50deg, transparent 52deg);
+	border-radius: 9999px;
+	animation: rotation 2.4s linear infinite;
+}
+
+.radar-anneau {
+	border: 1px solid rgb(247 242 232 / 0.08);
+	border-radius: 9999px;
+}
+
+@keyframes rotation {
+	to { transform: rotate(1turn); }
+}
+
+/* Barre indéterminée : un segment dégradé carmin -> crème qui traverse la piste. */
+.barre-indeterminee {
+	position: relative;
+	height: 0.375rem;
+	overflow: hidden;
+	border-radius: 9999px;
+	border: 1px solid rgb(38 33 28 / 0.7);
+	background: var(--color-obsidian-card);
+}
+
+.barre-indeterminee::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	width: 40%;
+	border-radius: inherit;
+	background: linear-gradient(90deg, transparent, var(--color-crimson-hover), var(--color-cream));
+	animation: traversee 1.6s var(--ease-douce) infinite;
+}
+
+@keyframes traversee {
+	from { transform: translateX(-110%); }
+	to   { transform: translateX(260%); }
+}
+
+/* Graduations du HUD : elles s'allument l'une après l'autre, en boucle. */
+.graduation {
+	display: block;
+	height: 0.375rem;
+	width: 1rem;
+	border-radius: 2px;
+	background: var(--color-obsidian-border);
+	animation: graduation 1.8s ease-in-out infinite;
+	animation-delay: calc(var(--rang, 0) * 110ms);
+}
+
+@keyframes graduation {
+	0%, 100% { background: var(--color-obsidian-border); box-shadow: none; }
+	30%      { background: var(--color-crimson-hover); box-shadow: 0 0 10px rgb(122 12 13 / 0.9); }
+}
+
+/* Pastille d'état qui pulse (service actif, audit en cours). */
+.pastille-vivante {
+	position: relative;
+}
+
+.pastille-vivante::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: inherit;
+	animation: pulsation 1.8s ease-out infinite;
+}
+
+@keyframes pulsation {
+	from { transform: scale(1); opacity: 0.7; }
+	to   { transform: scale(2.6); opacity: 0; }
+}
+
+/* ------------------------------------------------------------------------ chrono */
+
+/* Anneau du compte à rebours : `stroke-dashoffset` est piloté par le script, en continu. */
+.anneau-chrono {
+	transform: rotate(-90deg);
+	transform-origin: center;
+}
+
+.anneau-chrono .piste {
+	stroke: var(--color-obsidian-border);
+}
+
+.anneau-chrono .reste {
+	stroke: var(--color-crimson-hover);
+	stroke-linecap: round;
+	filter: drop-shadow(0 0 6px rgb(122 12 13 / 0.8));
+	transition: stroke-dashoffset 1s linear;
+}
+
+/* Chiffres du chrono : chasse fixe, sinon le « 1 » plus étroit fait trembler la ligne. */
+.chiffres {
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: "tnum";
+}
+
+/* Champ principal : liseré qui s'éclaire au focus, sans décaler la mise en page. */
+.champ-principal {
+	transition:
+		border-color 200ms var(--ease-douce),
+		box-shadow 200ms var(--ease-douce);
+}
+
+.champ-principal:focus-within {
+	border-color: var(--color-cream-dark);
+	box-shadow: 0 0 0 4px rgb(122 12 13 / 0.25);
+}
+
+.champ-principal[data-invalide] {
+	border-color: var(--color-echec);
+}

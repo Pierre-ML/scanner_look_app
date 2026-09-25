@@ -1,0 +1,127 @@
+---
+/**
+ * Écran d'attente animé, dans l'esprit du chargeur du portfolio : monogramme PML qui se
+ * dessine en boucle, balayage de radar, graduations du HUD, barre indéterminée, phase en
+ * cours et temps écoulé.
+ *
+ * Utilisé pour les attentes SANS estimation de durée — la découverte des pages. Pour l'audit,
+ * dont l'API estime la durée, la page de rapport affiche un compte à rebours à la place : une
+ * attente dont on connaît la fin doit être annoncée comme telle.
+ *
+ * `plein` : superposé à toute la page (envoi du formulaire d'accueil), sinon intégré au flux.
+ * Le composant est rendu `hidden` ; c'est au script de la page de le montrer. Le petit script
+ * ci-dessous ne fait qu'animer ce qui est visible : rotation des phases et chronomètre.
+ *
+ * Accessibilité : `role="status"` + `aria-live="polite"` sur la phrase de phase seulement —
+ * le chronomètre, qui change chaque seconde, n'est pas annoncé (ce serait du bruit continu).
+ */
+import Logo from "./Logo.astro";
+
+const {
+	id,
+	titre = "Découverte des pages",
+	phases = [
+		"Connexion au site",
+		"Lecture du plan de site",
+		"Suivi des liens internes",
+		"Tri des pages trouvées",
+	],
+	plein = false,
+	classe = "",
+} = Astro.props;
+---
+
+<div
+	id={id}
+	data-chargeur
+	data-phases={JSON.stringify(phases)}
+	hidden
+	class:list={[
+		plein
+			? "fixed inset-0 z-50 flex items-center justify-center bg-obsidian/95 backdrop-blur-sm"
+			: "relative overflow-hidden rounded-box border border-obsidian-border bg-obsidian-card",
+		classe,
+	]}
+>
+	<span class="repere-hud pointer-events-none absolute top-4 left-4">[ + ]</span>
+	<span class="repere-hud pointer-events-none absolute right-4 bottom-4">[ + ]</span>
+
+	<div class:list={["flex w-full max-w-md flex-col items-center px-6 text-center", plein ? "py-10" : "mx-auto py-12"]}>
+		{/* Radar + logo. Le cône tourne derrière le monogramme. */}
+		<div class="relative grid size-44 place-items-center" aria-hidden="true">
+			<span class="radar-anneau absolute inset-0"></span>
+			<span class="radar-anneau absolute inset-6"></span>
+			<span class="radar-anneau absolute inset-12"></span>
+			<span class="radar-balayage absolute inset-0"></span>
+			<Logo mode="boucle" classe="relative w-28 text-cream" />
+		</div>
+
+		<p class="libelle-hud mt-8">{titre}</p>
+
+		<p role="status" aria-live="polite" class="mt-2 min-h-7 font-titre text-lg tracking-wide text-cream">
+			<span data-chargeur-phase>{phases[0]}</span><span aria-hidden="true" class="text-cream-dark">…</span>
+		</p>
+
+		<div class="mt-6 flex w-full items-end justify-between gap-4">
+			<div class="flex items-center gap-1.5" aria-hidden="true">
+				{Array.from({ length: 8 }, (_, rang) => <span class="graduation" style={`--rang:${rang}`}></span>)}
+			</div>
+			<p class="text-right">
+				<span class="libelle-hud block">Écoulé</span>
+				<span data-chargeur-ecoule class="chiffres font-titre text-2xl leading-none text-cream">00:00</span>
+			</p>
+		</div>
+
+		<div class="barre-indeterminee mt-3 w-full" aria-hidden="true"></div>
+
+		<p class="mt-5 text-sm text-cream-muted">
+			<slot>Cela prend en général quelques secondes.</slot>
+		</p>
+	</div>
+</div>
+
+<script>
+	/**
+	 * Anime chaque chargeur visible : phase suivante toutes les 2,4 s (sans boucler — la
+	 * dernière phase reste affichée, revenir à « Connexion au site » laisserait croire à un
+	 * redémarrage), et temps écoulé depuis son apparition.
+	 *
+	 * Un `MutationObserver` sur l'attribut `hidden` détecte l'apparition : les pages n'ont
+	 * qu'à lever `hidden`, sans connaître ce script.
+	 */
+	for (const chargeur of document.querySelectorAll("[data-chargeur]")) {
+		const phases = JSON.parse(chargeur.dataset.phases || "[]");
+		const zonePhase = chargeur.querySelector("[data-chargeur-phase]");
+		const zoneEcoule = chargeur.querySelector("[data-chargeur-ecoule]");
+		let minuteur = null;
+
+		const demarrer = () => {
+			if (minuteur !== null) return;
+			const debut = Date.now();
+			let rang = 0;
+			if (zonePhase && phases[0]) zonePhase.textContent = phases[0];
+
+			minuteur = window.setInterval(() => {
+				const secondes = Math.floor((Date.now() - debut) / 1000);
+				if (zoneEcoule) {
+					zoneEcoule.textContent =
+						`${String(Math.floor(secondes / 60)).padStart(2, "0")}:${String(secondes % 60).padStart(2, "0")}`;
+				}
+				const cible = Math.min(phases.length - 1, Math.floor(secondes / 2.4));
+				if (cible !== rang && zonePhase) {
+					rang = cible;
+					zonePhase.textContent = phases[rang];
+				}
+			}, 250);
+		};
+
+		const arreter = () => {
+			if (minuteur !== null) window.clearInterval(minuteur);
+			minuteur = null;
+		};
+
+		const synchroniser = () => (chargeur.hidden ? arreter() : demarrer());
+		new MutationObserver(synchroniser).observe(chargeur, { attributes: true, attributeFilter: ["hidden"] });
+		synchroniser();
+	}
+</script>

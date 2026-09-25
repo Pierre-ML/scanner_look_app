@@ -1,0 +1,32 @@
+---
+/**
+ * Mise en garde sur l'éco-index, affichée partout où un éco-index apparaît.
+ *
+ * Le texte vient de `identite.js`, lui-même recopié de `ECOINDEX_DISCLAIMER` côté API. La
+ * page de rapport passe plutôt `texte={rapport.ecoindexDisclaimer}` : l'avertissement servi
+ * avec les données est le seul qui soit garanti à jour.
+ *
+ * `role="note"` et non `role="alert"` : ce n'est pas un message surgissant, c'est un
+ * avertissement permanent — un `alert` serait relu à chaque rafraîchissement du rapport.
+ *
+ * L'icône est en carmin (décoratif, `aria-hidden`) ; le texte, lui, est en crème, jamais en
+ * carmin : 2,45:1 de contraste ne passe pas le seuil AA.
+ */
+import Icone from "./Icone.astro";
+import { AVERTISSEMENT_ECOINDEX } from "../lib/identite.js";
+
+const { texte = AVERTISSEMENT_ECOINDEX, classe = "" } = Astro.props;
+---
+
+<div
+	role="note"
+	class={`flex gap-3 rounded-box border border-obsidian-border bg-obsidian-card p-4 ${classe}`}
+>
+	<Icone nom="alerte" taille={22} classe="mt-0.5 shrink-0 text-primary" />
+	<div class="space-y-1">
+		<p class="font-titre text-sm tracking-wide text-cream">
+			L’éco-index affiché est une estimation locale
+		</p>
+		<p class="text-sm leading-relaxed text-cream-muted">{texte}</p>
+	</div>
+</div>

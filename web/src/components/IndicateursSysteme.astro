@@ -1,0 +1,217 @@
+---
+/**
+ * État du serveur d'audit local et du navigateur d'audit, avec un bouton de nouveau test.
+ *
+ * Une seule route derrière les deux indicateurs : `GET /api/etat`, relayée par `astro dev`
+ * vers le serveur local (voir astro.config.mjs). Contrat de cette route
+ * (server/src/routes/api.js) :
+ *
+ *   200 OK  { navigateur: { trouve: true,  nom, chemin }, auditEnCours: <n° ou null> }
+ *   200 OK  { navigateur: { trouve: false, erreur },      auditEnCours: <n° ou null> }
+ *
+ * Serveur arrêté : le relais de Vite répond lui-même par une erreur (500, corps vide) ; le
+ * fetch peut aussi échouer tout court. Les deux cas s'affichent « Injoignable ».
+ *
+ * Quatre états possibles par ligne, jamais distingués par la seule couleur (voir la charte du
+ * projet : le carmin ne passe pas le contraste AA pour du texte, et une puce de couleur seule
+ * ne dit rien à qui ne la voit pas) :
+ *   - non vérifié  — avant le premier test, icône `sablier`, texte `text-cream-dark` ;
+ *   - actif         — icône `coche`, texte `text-ok` ;
+ *   - introuvable   — navigateur absent : icône `croix`, texte `text-echec`, avec la marche à
+ *                     suivre (installer Chrome ou définir CHROME_PATH) ;
+ *   - injoignable   — serveur arrêté : icône `croix`, texte `text-echec`.
+ *
+ * Un test se lance automatiquement à l'affichage de la page (pour ne pas laisser l'indicateur
+ * éternellement « non vérifié » si personne ne clique) et peut être relancé à la main.
+ */
+import Icone from "./Icone.astro";
+
+const { classe = "" } = Astro.props;
+---
+
+<section
+	aria-labelledby="titre-etat-service"
+	class={`flex flex-wrap items-center gap-x-5 gap-y-3 rounded-box border border-obsidian-border bg-obsidian-card/70 px-4 py-3 backdrop-blur-sm ${classe}`}
+>
+	<h2 id="titre-etat-service" class="libelle-hud flex items-center gap-2">
+		<Icone nom="serveur" taille={16} classe="text-primary" />
+		État du service
+	</h2>
+
+	{/*
+	 * `aria-live="polite"` sur le conteneur des deux lignes : un changement d'état doit être
+	 * annoncé sans que l'utilisateur ait à revenir dessus, mais sans couper une lecture en
+	 * cours — d'où `polite` et non `assertive`. `aria-atomic` fait relire la ligne entière,
+	 * sinon seule l'icône ou le mot modifié serait annoncé, hors contexte.
+	 *
+	 * Le détail (chemin du navigateur, marche à suivre) passe en infobulle native ET reste lu par
+	 * les lecteurs d'écran (`sr-only`) : la barre reste sur une ligne sans perdre l'information.
+	 */}
+	<dl id="lignes-etat" class="flex flex-1 flex-wrap items-center gap-x-5 gap-y-2" aria-live="polite" aria-atomic="true">
+		<div id="ligne-api" class="flex items-center gap-2">
+			<dt class="text-sm text-cream-muted">Serveur</dt>
+			<dd class="flex items-center gap-1.5">
+				<Icone id="icone-api" nom="sablier" taille={16} classe="shrink-0 text-cream-dark" />
+				<span id="libelle-api" class="text-sm text-cream-dark">Non vérifié</span>
+				<span id="detail-api" class="sr-only"></span>
+			</dd>
+		</div>
+
+		<div id="ligne-navigateur" class="flex items-center gap-2">
+			<dt class="text-sm text-cream-muted">Navigateur</dt>
+			<dd class="flex items-center gap-1.5">
+				<Icone id="icone-navigateur" nom="sablier" taille={16} classe="shrink-0 text-cream-dark" />
+				<span id="libelle-navigateur" class="text-sm text-cream-dark">Non vérifié</span>
+				<span id="detail-navigateur" class="sr-only"></span>
+			</dd>
+		</div>
+	</dl>
+
+	<button
+		type="button"
+		id="tester-sante"
+		class="btn btn-ghost btn-sm gap-2 font-normal text-cream-muted hover:text-cream"
+	>
+		<Icone nom="radar" taille={16} classe="text-primary" />
+		<span id="libelle-tester">Tester</span>
+	</button>
+</section>
+
+<script>
+	import { routes } from "../lib/api.js";
+	/*
+	 * Les trois seuls dessins que ce script pose après coup, importés en texte brut depuis
+	 * `src/assets/icons/`. Seul l'intérieur du `<svg>` est gardé : l'enveloppe (taille,
+	 * accessibilité, `id`) est déjà dans la page, rendue par `Icone.astro`.
+	 */
+	import sablier from "../assets/icons/sablier.svg?raw";
+	import coche from "../assets/icons/coche.svg?raw";
+	import croix from "../assets/icons/croix.svg?raw";
+
+	const interieur = (source) => source.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "");
+	const icons = { sablier: interieur(sablier), coche: interieur(coche), croix: interieur(croix) };
+
+	const bouton = document.querySelector("#tester-sante");
+	const libelleBouton = document.querySelector("#libelle-tester");
+	const libelleInitial = libelleBouton.textContent;
+
+	/** Remplace le dessin d'une icône déjà posée dans le HTML, sans recréer l'élément. */
+	function changerIcone(id, nom) {
+		const svg = document.getElementById(id);
+		if (svg) svg.innerHTML = icons[nom];
+	}
+
+	/** Applique un état visuel à une ligne (serveur ou navigateur), toujours icône + texte + couleur. */
+	function appliquerEtat(prefixe, { icone, libelle, detail, couleur }) {
+		changerIcone(`icone-${prefixe}`, icone);
+		document.getElementById(`icone-${prefixe}`).setAttribute("class", `shrink-0 ${couleur}`);
+
+		const spanLibelle = document.getElementById(`libelle-${prefixe}`);
+		spanLibelle.textContent = libelle;
+		spanLibelle.setAttribute("class", `text-sm ${couleur}`);
+
+		// Détail : lu par les lecteurs d'écran, et proposé en infobulle au survol.
+		document.getElementById(`detail-${prefixe}`).textContent = detail ? ` — ${detail}` : "";
+		document.getElementById(`ligne-${prefixe}`).title = detail ?? "";
+	}
+
+	async function tester() {
+		bouton.disabled = true;
+		bouton.setAttribute("aria-busy", "true");
+		libelleBouton.textContent = "Vérification…";
+
+		// « Vérification… » plutôt que de laisser le dernier résultat : un test relancé qui
+		// affiche encore l'ancien état pendant l'attente laisserait croire qu'il est instantané.
+		appliquerEtat("api", {
+			icone: "sablier",
+			libelle: "Vérification…",
+			couleur: "text-cream-dark",
+		});
+		appliquerEtat("navigateur", {
+			icone: "sablier",
+			libelle: "Vérification…",
+			couleur: "text-cream-dark",
+		});
+
+		try {
+			const reponse = await fetch(routes.etat(), {
+				headers: { Accept: "application/json" },
+				cache: "no-store",
+			});
+
+			let corps;
+			try {
+				corps = await reponse.json();
+			} catch {
+				corps = null;
+			}
+
+			/*
+			 * Pas de JSON lisible : c'est le relais de `astro dev` qui a répondu à la place du
+			 * serveur d'audit (arrêté, ou pas encore démarré). Rien à lire côté navigateur.
+			 */
+			if (!reponse.ok || !corps || typeof corps.navigateur !== "object") {
+				appliquerEtat("api", {
+					icone: "croix",
+					libelle: "Injoignable",
+					detail: "Le serveur d’audit local ne répond pas : relancez « npm run dev ».",
+					couleur: "text-echec",
+				});
+				appliquerEtat("navigateur", {
+					icone: "croix",
+					libelle: "Indéterminé",
+					detail: "Le serveur d’audit n’a pas pu être joint pour vérifier le navigateur.",
+					couleur: "text-echec",
+				});
+				return;
+			}
+
+			appliquerEtat("api", {
+				icone: "coche",
+				libelle: corps.auditEnCours ? `Audit n° ${corps.auditEnCours} en cours` : "Opérationnel",
+				couleur: "text-ok",
+			});
+
+			if (corps.navigateur.trouve) {
+				appliquerEtat("navigateur", {
+					icone: "coche",
+					libelle: corps.navigateur.nom,
+					detail: corps.navigateur.chemin,
+					couleur: "text-ok",
+				});
+			} else {
+				// Marche à suivre dans le libellé lui-même : l'information ne doit pas dépendre
+				// d'une infobulle que personne ne survole.
+				appliquerEtat("navigateur", {
+					icone: "croix",
+					libelle: "Introuvable : installez Chrome ou définissez CHROME_PATH",
+					detail: corps.navigateur.erreur,
+					couleur: "text-echec",
+				});
+			}
+		} catch {
+			// Échec réseau : l'interface n'a même pas pu joindre son propre relais.
+			appliquerEtat("api", {
+				icone: "croix",
+				libelle: "Injoignable",
+				detail: "Aucune réponse de l’interface elle-même.",
+				couleur: "text-echec",
+			});
+			appliquerEtat("navigateur", {
+				icone: "croix",
+				libelle: "Indéterminé",
+				couleur: "text-echec",
+			});
+		} finally {
+			bouton.disabled = false;
+			bouton.removeAttribute("aria-busy");
+			libelleBouton.textContent = libelleInitial;
+		}
+	}
+
+	bouton.addEventListener("click", tester);
+
+	// Premier test automatique à l'affichage : sans lui, l'indicateur resterait « Non vérifié »
+	// tant que personne n'a cliqué, ce qui n'aide personne à voir l'état du service.
+	tester();
+</script>

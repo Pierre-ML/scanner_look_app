@@ -1,0 +1,22 @@
+{
+  "name": "web",
+  "type": "module",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^7.3.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "daisyui": "^5.7.43",
+    "tailwindcss": "^4.3.3"
+  },
+  "description": "Interface web (Astro + daisyUI) d'eco-audit, servie en local par astro dev",
+  "private": true
+}

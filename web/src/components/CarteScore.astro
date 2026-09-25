@@ -1,0 +1,66 @@
+---
+/**
+ * Carte de moyennes : un bloc de quatre scores Lighthouse (bureau ou mobile), ou la
+ * synthèse éco-index.
+ *
+ * Les valeurs arrivent telles que l'API les calcule dans `averages` : un nombre sur 100, ou
+ * `null` quand aucune page n'a fourni la métrique. `null` s'affiche « — » et non « 0 » :
+ * une mesure absente n'est pas une mesure nulle.
+ */
+import Icone from "./Icone.astro";
+
+const { titre, icone, lignes, note = null, detail = null } = Astro.props;
+
+/** Un score sur 100, ou le tiret cadratin si la mesure manque. */
+const formater = (valeur) =>
+	typeof valeur === "number" && !Number.isNaN(valeur) ? String(valeur) : "—";
+
+/**
+ * Couleur du chiffre, aux seuils de Lighthouse (90 / 50). Ce sont des couleurs de TEXTE :
+ * toutes vérifiées au-delà de 4.5:1 sur l'obsidian, aucune n'est le carmin.
+ */
+const couleur = (valeur) => {
+	if (typeof valeur !== "number" || Number.isNaN(valeur)) return "text-cream-dark";
+	if (valeur >= 90) return "text-ok";
+	if (valeur >= 50) return "text-alerte";
+	return "text-echec";
+};
+---
+
+<section class="rounded-box border border-obsidian-border bg-obsidian-card p-5">
+	<h3 class="flex items-center gap-2.5 text-base tracking-wide">
+		<Icone nom={icone} taille={22} classe="text-primary" />
+		{titre}
+	</h3>
+
+	{
+		/*
+		 * La note éco-index (A à G) est un aplat carmin : c'est le seul endroit où la couleur
+		 * porte du sens, et la lettre posée dessus est en crème (`primary-content`), donc
+		 * lisible. La lettre seule ne suffirait pas à un lecteur d'écran, d'où le `sr-only`.
+		 */
+		note && (
+			<p class="mt-4 flex items-baseline gap-3">
+				<span class="inline-flex h-11 w-11 items-center justify-center rounded-box bg-primary font-titre text-2xl text-primary-content">
+					{note}
+				</span>
+				<span class="sr-only">Note éco-index : {note}</span>
+				<span class="text-sm text-cream-muted">{detail}</span>
+			</p>
+		)
+	}
+
+	<dl class="mt-4 space-y-2.5">
+		{
+			lignes.map((ligne) => (
+				<div class="flex items-baseline justify-between gap-4 border-b border-obsidian-border pb-2 last:border-0 last:pb-0">
+					<dt class="text-sm text-cream-muted">{ligne.nom}</dt>
+					<dd class={`font-titre text-xl tabular-nums ${ligne.brut ? "text-cream" : couleur(ligne.valeur)}`}>
+						{ligne.brut ? ligne.valeur : formater(ligne.valeur)}
+						{!ligne.brut && <span class="text-xs text-cream-dark"> /100</span>}
+					</dd>
+				</div>
+			))
+		}
+	</dl>
+</section>

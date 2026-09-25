@@ -1,0 +1,124 @@
+---
+/**
+ * Résumé d'un audit tel que ce navigateur l'a gardé dans le cookie `eco_audits`.
+ *
+ * Affiché quand l'audit a été supprimé du dossier `data/` mais que ce navigateur en avait
+ * conservé le résumé : le rapport détaillé n'existe plus, les moyennes restent lisibles. Rendu
+ * côté serveur à partir du cookie reçu avec la requête, donc visible sans JavaScript.
+ *
+ * Le cookie est une donnée venue du client : tout ce qui en sort est affiché comme TEXTE
+ * (échappé par Astro), jamais comme HTML, et les nombres sont revérifiés un par un.
+ */
+import Icone from "./Icone.astro";
+
+const { entree, titreNiveau = "h2" } = Astro.props;
+const Titre = titreNiveau;
+
+const nombre = (valeur) => (typeof valeur === "number" && Number.isFinite(valeur) ? valeur : null);
+
+/** Mêmes seuils et mêmes couleurs de texte que le rapport (90 / 50), toutes AA. */
+const classeScore = (valeur) => {
+	if (valeur === null) return "text-cream-dark";
+	if (valeur >= 90) return "text-ok";
+	if (valeur >= 50) return "text-alerte";
+	return "text-echec";
+};
+
+const LIBELLES = ["Performance", "Accessibilité", "Bonnes pratiques", "Référencement"];
+const groupes = [
+	{ nom: "Bureau", icone: "bureau", valeurs: entree.d },
+	{ nom: "Mobile", icone: "mobile", valeurs: entree.m },
+].filter((groupe) => Array.isArray(groupe.valeurs));
+
+const eco = Array.isArray(entree.e) ? entree.e : null;
+const ecoScore = eco ? nombre(eco[0]) : null;
+const ecoNote = eco && typeof eco[1] === "string" && /^[A-G]$/.test(eco[1]) ? eco[1] : null;
+
+const dateAudit = new Intl.DateTimeFormat("fr-FR", {
+	dateStyle: "long",
+	timeStyle: "short",
+	timeZone: "Europe/Paris",
+}).format(new Date(entree.t));
+
+const aDesScores = groupes.length > 0 || ecoScore !== null;
+---
+
+<section class="rounded-box border border-obsidian-border bg-obsidian-card p-6">
+	<p class="libelle-hud flex items-center gap-2">
+		<Icone nom="document" taille={16} classe="text-primary" />
+		Résumé conservé dans votre navigateur
+	</p>
+	<Titre class="mt-2 font-titre text-2xl tracking-wide break-all">{entree.u || `Audit n° ${entree.i}`}</Titre>
+	<p class="mt-1 text-sm text-cream-muted">
+		Audit du {dateAudit}
+		{nombre(entree.n) !== null && ` · ${entree.n} page${entree.n > 1 ? "s" : ""} mesurée${entree.n > 1 ? "s" : ""}`}
+		{nombre(entree.x) > 0 && ` dont ${entree.x} en erreur`}
+	</p>
+
+	{
+		aDesScores ? (
+			<div class="mt-6 grid gap-4 md:grid-cols-3">
+				{groupes.map((groupe) => (
+					<div class="rounded-box border border-obsidian-border p-4">
+						<p class="flex items-center gap-2 font-titre tracking-wide">
+							<Icone nom={groupe.icone} taille={18} classe="text-primary" />
+							{groupe.nom}
+						</p>
+						<dl class="mt-3 space-y-1.5">
+							{LIBELLES.map((libelle, rang) => {
+								const valeur = nombre(groupe.valeurs[rang]);
+								return (
+									<div class="flex items-baseline justify-between gap-3 text-sm">
+										<dt class="text-cream-muted">{libelle}</dt>
+										<dd class:list={["chiffres font-titre text-lg", classeScore(valeur)]}>
+											{valeur ?? "—"}
+											<span class="text-xs text-cream-dark"> /100</span>
+										</dd>
+									</div>
+								);
+							})}
+						</dl>
+					</div>
+				))}
+				<div class="rounded-box border border-obsidian-border p-4">
+					<p class="flex items-center gap-2 font-titre tracking-wide">
+						<Icone nom="feuille" taille={18} classe="text-primary" />
+						Éco-index
+					</p>
+					<div class="mt-3 flex items-center gap-4">
+						<span class="grid size-14 place-items-center rounded-box bg-primary font-titre text-2xl text-primary-content" aria-hidden="true">
+							{ecoNote ?? "—"}
+						</span>
+						<p>
+							<span class="sr-only">Note éco-index : {ecoNote ?? "non calculée"}. </span>
+							<span class:list={["chiffres font-titre text-2xl", classeScore(ecoScore)]}>{ecoScore ?? "—"}</span>
+							<span class="text-xs text-cream-dark"> /100</span>
+							<span class="block text-xs text-cream-dark">estimation locale</span>
+						</p>
+					</div>
+				</div>
+			</div>
+		) : (
+			<p class="mt-6 text-sm text-cream-muted">
+				Cet audit n’était pas terminé lors de votre dernière visite : aucun score n’a pu être
+				conservé.
+			</p>
+		)
+	}
+
+	<p class="mt-5 text-xs text-cream-dark">
+		Ce résumé n’existe que dans votre navigateur (cookie <code>eco_audits</code>) : le détail page par
+		page a été supprimé du dossier <code>data/</code> de cette machine.
+	</p>
+
+	<div class="mt-6 flex flex-wrap gap-3">
+		<a href={`/?url=${encodeURIComponent(entree.u || "")}`} class="btn btn-primary gap-2">
+			<Icone nom="loupe" taille={20} />
+			Relancer cet audit
+		</a>
+		<a href="/mes-audits" class="btn btn-ghost gap-2">
+			<Icone nom="document" taille={20} classe="text-primary" />
+			Tous mes audits
+		</a>
+	</div>
+</section>

@@ -1,0 +1,905 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Icone from "../../components/Icone.astro";
+import BandeauEcoindex from "../../components/BandeauEcoindex.astro";
+import CarteScore from "../../components/CarteScore.astro";
+import TableauResultats from "../../components/TableauResultats.astro";
+import AuditIndisponible from "../../components/AuditIndisponible.astro";
+import { routes, LIBELLE_STATUT } from "../../lib/api.js";
+import { routesServeur, chargerEtatInitial } from "../../lib/api-serveur.js";
+import ResumeArchive from "../../components/ResumeArchive.astro";
+import { NOM_COOKIE, analyserHistorique, trouverEntree } from "../../lib/historique.js";
+import { formaterChrono } from "../../scripts/chrono.js";
+
+/**
+ * Rapport d'audit — `/rapport/[jobId]`, RENDU À LA DEMANDE.
+ *
+ * Pourquoi cette route ne peut pas être pré-générée : un jobId naît quand l'utilisateur lance
+ * un audit. `getStaticPaths` ne peut pas énumérer à l'avance des numéros qui n'existent pas
+ * encore.
+ *
+ * Ce que le rendu serveur apporte, concrètement :
+ *   - un 404 avec le BON code HTTP quand l'audit a été supprimé, sans dépendre de JavaScript ;
+ *   - l'avancement déjà juste au premier affichage, plutôt qu'un « Chargement… » suivi d'un
+ *     saut de contenu deux cents millisecondes plus tard.
+ *
+ * Ce qu'il ne remplace pas : le polling. Le rendu serveur ne supprime que le premier
+ * aller-retour à vide ; les mises à jour suivantes restent le fait du script client, qui
+ * hydrate son état depuis `#donnees-initiales` au lieu de refaire un fetch immédiat.
+ */
+export const prerender = false;
+
+const { jobId } = Astro.params;
+
+/*
+ * Deux appels en parallèle et non l'un après l'autre : ils ne dépendent pas l'un de l'autre,
+ * et c'est ce fetch qui retient la réponse HTTP de l'utilisateur. `status` donne
+ * l'avancement, `report` les pages déjà mesurées — un rapport partiel est lisible.
+ *
+ * `routesServeur` et non `routes` : l'adresse directe du serveur d'audit (127.0.0.1), sans
+ * passer par le relais de `astro dev`.
+ */
+const [etatInitial, rapportInitial] = await Promise.all([
+	chargerEtatInitial(routesServeur.statut(jobId)),
+	chargerEtatInitial(routesServeur.rapport(jobId)),
+]);
+
+/*
+ * Job introuvable : le serveur a répondu 404, donc l'audit n'existe pas ou a été supprimé de
+ * `data/`. La page répond elle-même en 404 — un rapport disparu ne doit pas être servi avec un
+ * code 200.
+ */
+const introuvable = etatInitial.cas === "introuvable";
+if (introuvable) {
+	Astro.response.status = 404;
+}
+
+/*
+ * Résumé local d'un audit supprimé : si CE navigateur a gardé l'audit dans son cookie
+ * d'historique, on affiche ses moyennes au lieu d'une simple page « introuvable ». Le code
+ * reste 404 — la ressource n'existe plus côté serveur, le résumé n'est qu'un souvenir local.
+ */
+const archive = introuvable
+	? trouverEntree(analyserHistorique(Astro.cookies.get(NOM_COOKIE)?.value), jobId)
+	: null;
+
+/*
+ * `Cache-Control: no-store` sur l'en-tête HTTP, en plus des balises `<meta>` posées par le
+ * gabarit. Les deux sont nécessaires et ne couvrent pas la même chose : la balise vise le
+ * cache du navigateur, l'en-tête vise les caches intermédiaires — proxy, CDN, reverse proxy.
+ * Les données changent à chaque seconde ; un rapport servi depuis un cache afficherait un
+ * avancement périmé, voire un rapport vide sur un audit terminé.
+ */
+Astro.response.headers.set("cache-control", "no-store, no-cache, must-revalidate, max-age=0");
+Astro.response.headers.set("pragma", "no-cache");
+
+/** État servi au script client. `null` quand le serveur n'a rien obtenu : le polling reprendra. */
+const etat = etatInitial.cas === "ok" ? etatInitial.donnees : null;
+const rapport = rapportInitial.cas === "ok" ? rapportInitial.donnees : null;
+
+/**
+ * Données injectées dans le HTML, lues par le script au chargement.
+ * `indisponible` porte le message d'une API momentanément muette : la page le dit, plutôt
+ * que d'afficher un état faussement vide.
+ */
+const donneesInitiales = {
+	jobId,
+	etat,
+	rapport,
+	indisponible: etatInitial.cas === "indisponible" ? etatInitial.message : null,
+};
+
+/* ---------------------------------------------------- valeurs rendues côté serveur */
+
+/** Avancement déjà connu : le HTML part avec les bons chiffres, sans « Chargement… ». */
+const pourcent = etat?.progression?.pourcent ?? 0;
+const faites = etat?.processedPages ?? 0;
+const total = etat?.totalPages ?? 0;
+const erreurs = etat?.errorPages ?? 0;
+const statutLisible = etat ? (LIBELLE_STATUT[etat.status] ?? etat.status) : "Chargement…";
+
+/** Compte à rebours : visible tant que l'API donne une estimation (audit en file ou en cours). */
+const restantInitial = etat?.progression?.restantMs;
+const chronoVisible = typeof restantInitial === "number" && restantInitial > 0 && !etat?.finished;
+const chronoInitial = chronoVisible ? formaterChrono(restantInitial) : "--:--";
+
+/** Le compte inclut les pages en erreur : une page qui a échoué a bien été traitée. */
+let compteInitial = "—";
+if (etat) {
+	compteInitial = `${faites}/${total} page${total > 1 ? "s" : ""} traitée${faites > 1 ? "s" : ""}`;
+	if (erreurs > 0) compteInitial += ` dont ${erreurs} en erreur`;
+}
+
+/**
+ * Adresse JSON du rapport, affichée dans le bloc sans JavaScript, et adresse de l'export en
+ * fichier. Chemins relatifs : `astro dev` les relaie vers le serveur d'audit.
+ */
+const urlRapportRelais = routes.rapport(jobId);
+const urlExport = routes.exporter(jobId);
+---
+
+{
+	/*
+	 * Audit supprimé : même composant que la page 404 générale, pour que l'explication soit
+	 * écrite à un seul endroit. Rendu côté serveur, donc lisible sans JavaScript.
+	 */
+	introuvable ? (
+		<Layout titre="Audit introuvable" sansCache={true}>
+			{archive ? (
+				<>
+					<p class="libelle-hud flex items-center gap-2">
+						<Icone nom="info" taille={18} classe="text-primary" />
+						Audit n° {jobId} · supprimé de cette machine
+					</p>
+					<h1 class="mt-3 text-titre-page leading-tight">Rapport archivé</h1>
+					<p class="mt-4 max-w-2xl text-cream-muted">
+						Le détail de cet audit a été effacé du dossier data/. Votre navigateur en avait gardé
+						le résumé :
+					</p>
+					<div class="mt-8">
+						<ResumeArchive entree={archive} />
+					</div>
+				</>
+			) : (
+				<AuditIndisponible numero={jobId} />
+			)}
+		</Layout>
+	) : (
+<Layout titre="Rapport d’audit" sansCache={true} large={true}>
+	{/*
+	 * État initial, sérialisé pour le script client.
+	 *
+	 * `type="application/json"` : le navigateur ne l'exécute pas, c'est du texte inerte. Rien
+	 * de ce que renvoie l'API ne peut donc être interprété comme du code.
+	 *
+	 * `set:html` : Astro n'échappe pas le contenu, ce qu'il faut ici — un échappement HTML
+	 * corromprait le JSON. Reste un cas à traiter à la main : une chaîne contenant
+	 * `</script>` fermerait la balise prématurément, car `JSON.stringify` n'échappe pas les
+	 * chevrons ouvrants. D'où leur remplacement par leur échappement Unicode, qui est du JSON
+	 * valide et se relit à l'identique. Une URL auditée peut parfaitement contenir la séquence.
+	 *
+	 * `is:inline` : la balise porte des attributs, Astro ne la traiterait donc pas de toute
+	 * façon ; le dire explicitement évite un avertissement et documente l'intention.
+	 */}
+	<script
+		is:inline
+		type="application/json"
+		id="donnees-initiales"
+		set:html={JSON.stringify(donneesInitiales).replaceAll("<", "\\u003c")}
+	/>
+
+	{/*
+	 * Sans JavaScript, la page reste utile : depuis le passage au rendu à la demande, tout
+	 * l'avancement et le tableau des pages déjà mesurées sont écrits par le serveur. Il ne
+	 * manque que la mise à jour automatique, d'où cette seule consigne.
+	 */}
+	<noscript>
+		<p class="flex items-start gap-2 rounded-box border border-obsidian-border bg-obsidian-card p-4 text-sm text-cream-muted">
+			<Icone nom="info" taille={18} classe="mt-0.5 shrink-0 text-primary" />
+			<span>
+				JavaScript est désactivé : l’avancement ci-dessous est celui du chargement de la page.
+				<strong class="text-cream">Rechargez la page</strong> pour le mettre à jour. Le rapport
+				complet est aussi disponible au format JSON :
+				<code class="break-all">{urlRapportRelais}</code>.
+			</span>
+		</p>
+	</noscript>
+
+	{/*
+	 * Plus de `hidden` ici : le contenu est rendu par le serveur et doit être visible
+	 * immédiatement, y compris sans JavaScript. C'est tout l'objet du rendu à la demande —
+	 * auparavant, ce bloc était masqué et révélé par le script, faute de données au build.
+	 */}
+	<div id="application">
+		<header class="border-b filet pb-6">
+			<p class="libelle-hud flex items-center gap-2">
+				<Icone nom="radar" taille={18} classe="text-primary" />
+				Étape 3 sur 3 · Rapport
+			</p>
+			<h1 class="mt-3 text-titre-page leading-tight">Rapport d’audit</h1>
+			<p class="mt-3 break-all text-cream-muted">
+				Site audité : <span id="cible" class="text-cream">{etat?.targetUrl ?? "…"}</span>
+			</p>
+		</header>
+
+		{/*
+		 * Le bandeau éco-index est affiché AVANT tout score : l'avertissement doit être lu avant
+		 * les chiffres, pas après. Son texte est remplacé, dès le premier rapport reçu, par celui
+		 * que l'API renvoie dans `ecoindexDisclaimer` — la version servie avec les données est la
+		 * seule garantie à jour.
+		 */}
+		<BandeauEcoindex classe="mt-6" texte={rapport?.ecoindexDisclaimer ?? undefined} />
+
+		{/* ==================================================== avancement */}
+		<section
+			id="bloc-avancement"
+			class="mt-8 flex flex-col gap-8 rounded-box border border-obsidian-border bg-obsidian-card p-6 md:flex-row md:items-center"
+		>
+			{/*
+			 * Compte à rebours en temps réel, calé sur l'estimation de l'API (`restantMs`) et
+			 * décompté chaque seconde par `scripts/chrono.js`. L'anneau se vide au même rythme.
+			 *
+			 * Le chiffre est rendu par le serveur : sans JavaScript, il donne l'estimation au
+			 * moment du chargement. Il n'est PAS dans une région `aria-live` — une annonce par
+			 * seconde serait inaudible ; `#chrono-lecture` en fait une par minute.
+			 */}
+			<div id="bloc-chrono" hidden={!chronoVisible} class="relative mx-auto grid size-48 shrink-0 place-items-center md:mx-0">
+				<svg class="anneau-chrono absolute inset-0 size-full" viewBox="0 0 120 120" aria-hidden="true">
+					<circle class="piste" cx="60" cy="60" r="54" fill="none" stroke-width="3"></circle>
+					<circle id="anneau-reste" class="reste" cx="60" cy="60" r="54" fill="none" stroke-width="4"></circle>
+				</svg>
+				<div class="text-center">
+					<span class="libelle-hud block">Restant</span>
+					<span id="chrono-chiffres" class="chiffres mt-1 block font-titre text-5xl leading-none text-cream">{chronoInitial}</span>
+				</div>
+			</div>
+
+			<div class="min-w-0 flex-1">
+			<div class="flex flex-wrap items-baseline justify-between gap-3">
+				<h2 class="flex items-center gap-2.5 text-xl tracking-wide">
+					<span
+						id="pastille-statut"
+						hidden={!chronoVisible}
+						class="pastille-vivante inline-block size-2 rounded-full bg-crimson-hover"
+						aria-hidden="true"
+					></span>
+					<span id="libelle-statut">{statutLisible}</span>
+				</h2>
+				<p id="pourcentage" class="chiffres font-titre text-2xl">{etat ? `${pourcent} %` : "—"}</p>
+			</div>
+
+			{/*
+			 * Jauge d'avancement.
+			 *
+			 * `<progress>` natif plutôt qu'un div stylé : il est annoncé par les lecteurs d'écran,
+			 * il connaît son `max`, et il n'a besoin d'aucune ARIA. Le texte sous la jauge n'est
+			 * pas décoratif — il porte le compte réel, pages en erreur incluses, que le seul
+			 * pourcentage masquerait.
+			 */}
+			<progress
+				id="jauge"
+				class="progress progress-primary mt-4 w-full"
+				value={pourcent}
+				max="100"
+				aria-labelledby="libelle-statut"
+			></progress>
+
+			{/*
+			 * `aria-live="polite"` : l'avancement change toutes les deux secondes. `polite` laisse
+			 * le lecteur d'écran finir sa phrase ; `assertive` couperait la parole en boucle.
+			 * `aria-atomic` fait relire la phrase entière, sinon seul le chiffre modifié est
+			 * annoncé et l'information devient inintelligible.
+			 */}
+			<p id="compte" class="mt-3 font-titre text-lg" aria-live="polite" aria-atomic="true">
+				{compteInitial}
+			</p>
+
+			<p id="page-en-cours" hidden class="mt-2 flex items-start gap-2 text-sm text-cream-muted">
+				<Icone nom="globe" taille={16} classe="mt-0.5 shrink-0 text-primary" />
+				<span>
+					Page en cours : <span id="url-en-cours" class="break-all text-cream"></span>
+				</span>
+			</p>
+
+			<p id="chrono-legende" class="mt-2 text-xs text-cream-dark"></p>
+			<p id="chrono-lecture" class="sr-only" aria-live="polite"></p>
+			<p id="restant" class="mt-2 text-sm text-cream-dark"></p>
+
+			{/*
+			 * Signal de pause du polling. La pause en arrière-plan est délibérée : la dire
+			 * explicitement évite que l'utilisateur, revenant sur l'onglet, croie l'audit bloqué.
+			 */}
+			<p id="pause-polling" hidden class="mt-2 text-sm text-cream-dark">
+				Suivi en pause pendant que l’onglet est en arrière-plan.
+			</p>
+
+			<div class="mt-5 flex flex-wrap gap-3">
+				<button type="button" id="arreter" class="btn btn-sm btn-ghost gap-2">
+					<Icone nom="arret" taille={18} classe="text-primary" />
+					<span id="libelle-arreter">Arrêter le scan</span>
+				</button>
+			</div>
+			</div>
+		</section>
+
+		{/* ======================================================= moyennes */}
+		<section id="bloc-moyennes" hidden={!(rapport?.pages?.length > 0)} class="mt-10">
+			<h2 class="text-xl tracking-wide">Moyennes</h2>
+			<p class="mt-1 text-sm text-cream-muted">
+				Calculées sur les pages mesurées avec succès : une page en erreur ne tire pas les
+				moyennes vers le bas.
+			</p>
+
+			<div class="mt-4 grid gap-4 lg:grid-cols-3">
+				<div id="carte-bureau">
+					<CarteScore
+						titre="Bureau"
+						icone="bureau"
+						lignes={[
+							{ nom: "Performance", valeur: null, cle: "performance" },
+							{ nom: "Accessibilité", valeur: null, cle: "accessibility" },
+							{ nom: "Bonnes pratiques", valeur: null, cle: "bestPractices" },
+							{ nom: "Référencement", valeur: null, cle: "seo" },
+						]}
+					/>
+				</div>
+				<div id="carte-mobile">
+					<CarteScore
+						titre="Mobile"
+						icone="mobile"
+						lignes={[
+							{ nom: "Performance", valeur: null, cle: "performance" },
+							{ nom: "Accessibilité", valeur: null, cle: "accessibility" },
+							{ nom: "Bonnes pratiques", valeur: null, cle: "bestPractices" },
+							{ nom: "Référencement", valeur: null, cle: "seo" },
+						]}
+					/>
+				</div>
+				<div id="carte-eco">
+					<CarteScore
+						titre="Éco-index"
+						icone="feuille"
+						note="—"
+						detail="estimation locale"
+						lignes={[
+							{ nom: "Score", valeur: null, cle: "score" },
+							{ nom: "Éléments du DOM", valeur: "—", brut: true, cle: "dom" },
+							{ nom: "Requêtes", valeur: "—", brut: true, cle: "requests" },
+							{ nom: "Poids transféré", valeur: "—", brut: true, cle: "sizeKo" },
+							{ nom: "GES estimés", valeur: "—", brut: true, cle: "ghg" },
+							{ nom: "Eau estimée", valeur: "—", brut: true, cle: "water" },
+						]}
+					/>
+				</div>
+			</div>
+		</section>
+
+		{/* ========================================================= détail */}
+		<section id="bloc-detail" hidden={!(rapport?.pages?.length > 0)} class="mt-10">
+			<div class="flex flex-wrap items-baseline justify-between gap-3">
+				<h2 class="text-xl tracking-wide">Détail par page</h2>
+				<p id="compte-detail" class="text-sm text-cream-dark"></p>
+			</div>
+			<div class="mt-4">
+				<TableauResultats />
+			</div>
+		</section>
+
+		{/* ========================================================= erreurs */}
+		<section id="etat-erreur" hidden class="mt-8 rounded-box border border-obsidian-border bg-obsidian-card p-6">
+			<h2 class="flex items-center gap-2.5 text-xl tracking-wide">
+				<Icone nom="alerte" taille={22} classe="text-primary" />
+				<span id="titre-erreur">Audit impossible</span>
+			</h2>
+			<p id="message-erreur" class="mt-3 text-echec"></p>
+			<p id="detail-erreur" class="mt-3 text-cream-muted"></p>
+			<p class="mt-6 flex flex-wrap gap-3">
+				<a href="/" class="btn btn-primary gap-2">
+					<Icone nom="retour" taille={20} />
+					Lancer un autre audit
+				</a>
+				<button type="button" id="reessayer" class="btn btn-ghost">Réessayer</button>
+			</p>
+		</section>
+
+		{/*
+		 * Export : un simple lien de téléchargement, le serveur envoie le fichier avec son nom
+		 * (`Content-Disposition`). Utilisable à tout moment, y compris sur un rapport partiel.
+		 */}
+		<div class="mt-10 flex flex-wrap items-center justify-between gap-4">
+			<p class="text-sm text-cream-dark">
+				Cet audit est enregistré sur votre machine et reste disponible dans{" "}
+				<a href="/mes-audits" class="underline">Mes audits</a>.
+			</p>
+			<a href={urlExport} download class="btn btn-sm btn-ghost gap-2">
+				<Icone nom="document" taille={18} classe="text-primary" />
+				Exporter le rapport (JSON)
+			</a>
+		</div>
+	</div>
+</Layout>
+	)
+}
+
+<script>
+	import { routes, LIBELLE_STATUT, STATUTS_TERMINES } from "../../lib/api.js";
+	import {
+		abregerUrl,
+		appeler,
+		creerPolling,
+		formaterDuree,
+		lireDonneesInitiales,
+		lireJobId,
+	} from "../../scripts/job.js";
+	import { creerChrono } from "../../scripts/chrono.js";
+	import { abregerCible, enregistrerAudit, resumerRapport } from "../../lib/historique.js";
+
+	/*
+	 * Plus de `application.hidden = false` : le contenu est rendu par le serveur et déjà
+	 * visible. Le script ne fait plus apparaître la page, il la met à jour.
+	 */
+	const initiales = lireDonneesInitiales();
+	const jobId = lireJobId();
+
+	const elements = {
+		cible: document.querySelector("#cible"),
+		statut: document.querySelector("#libelle-statut"),
+		pourcentage: document.querySelector("#pourcentage"),
+		jauge: document.querySelector("#jauge"),
+		compte: document.querySelector("#compte"),
+		pageEnCours: document.querySelector("#page-en-cours"),
+		urlEnCours: document.querySelector("#url-en-cours"),
+		restant: document.querySelector("#restant"),
+		pause: document.querySelector("#pause-polling"),
+		arreter: document.querySelector("#arreter"),
+		libelleArreter: document.querySelector("#libelle-arreter"),
+		blocAvancement: document.querySelector("#bloc-avancement"),
+		blocMoyennes: document.querySelector("#bloc-moyennes"),
+		blocDetail: document.querySelector("#bloc-detail"),
+		compteDetail: document.querySelector("#compte-detail"),
+		lignes: document.querySelector("#lignes-resultats"),
+		erreur: document.querySelector("#etat-erreur"),
+		blocChrono: document.querySelector("#bloc-chrono"),
+		pastille: document.querySelector("#pastille-statut"),
+	};
+
+	const chrono = creerChrono({
+		chiffres: document.querySelector("#chrono-chiffres"),
+		anneau: document.querySelector("#anneau-reste"),
+		lecture: document.querySelector("#chrono-lecture"),
+		legende: document.querySelector("#chrono-legende"),
+	});
+
+	document.querySelector("#reessayer").addEventListener("click", () => window.location.reload());
+
+	function echouer(genre, message) {
+		const titre = document.querySelector("#titre-erreur");
+		const detail = document.querySelector("#detail-erreur");
+
+		if (genre === "introuvable") {
+			titre.textContent = "Rapport introuvable";
+			detail.textContent =
+				"Cet audit n’existe pas sur cette machine : il a sans doute été effacé depuis " +
+				"« Mes audits », ou le dossier data/ a été vidé. Relancez-le depuis le formulaire.";
+		} else if (genre === "reseau") {
+			titre.textContent = "Serveur injoignable";
+			detail.textContent =
+				"L’avancement n’a pas pu être récupéré. Vérifiez que « npm run dev » tourne " +
+				"toujours, puis réessayez.";
+		} else {
+			titre.textContent = "Audit impossible";
+			detail.textContent = "";
+		}
+
+		document.querySelector("#message-erreur").textContent = message;
+		elements.erreur.hidden = false;
+		elements.blocAvancement.hidden = true;
+	}
+
+	if (!jobId) {
+		echouer("introuvable", "Aucun numéro d’audit dans l’adresse de cette page.");
+	} else {
+		suivre(jobId);
+	}
+
+	/* ==================================================================== */
+
+	function suivre(id) {
+		/** Évite de recharger le rapport complet à chaque tour une fois l'audit fini. */
+		let rapportCharge = false;
+
+		/*
+		 * ------------------------------------------------ hydratation
+		 *
+		 * Le serveur a déjà rendu l'avancement et le tableau. On reprend son état plutôt que de
+		 * refaire immédiatement les deux mêmes appels : ils renverraient, à quelques
+		 * millisecondes près, ce qui est déjà à l'écran.
+		 *
+		 * Ce qui est fait ici, et que le HTML seul ne peut pas porter : les variables internes du
+		 * script (`rapportCharge`, l'état du bouton d'arrêt) et les éléments que seul le
+		 * JavaScript sait remplir — page en cours, temps restant, cellules du tableau.
+		 */
+		let etatHydrate = false;
+
+		if (initiales.etat) {
+			afficherAvancement(initiales.etat);
+			etatHydrate = true;
+
+			if (initiales.rapport) {
+				appliquerRapport(initiales.rapport, initiales.etat.finished);
+				rapportCharge = true;
+			}
+
+			/*
+			 * Audit déjà terminé au moment du rendu : il n'y a plus rien à interroger. On
+			 * n'ouvre même pas de polling — c'est le cas le plus fréquent pour un lien de
+			 * rapport partagé ou rouvert.
+			 */
+			if (initiales.etat.finished) return;
+		} else if (initiales.indisponible) {
+			/*
+			 * L'API n'a pas répondu au serveur pendant le rendu. Ce n'est pas forcément
+			 * définitif : on le dit, et le polling réessaiera dans deux secondes.
+			 */
+			elements.restant.textContent = `${initiales.indisponible} Nouvelle tentative en cours…`;
+		}
+
+		/*
+		 * Polling de l'avancement, toutes les 2 s, MIS EN PAUSE quand l'onglet passe en
+		 * arrière-plan et relancé immédiatement au retour au premier plan : toute la mécanique
+		 * est dans `creerPolling`.
+		 *
+		 * `immediat: false` quand le serveur a déjà fourni l'état : on attend le premier tour du
+		 * minuteur au lieu de refaire un aller-retour pour rien. Sans état initial (API muette
+		 * au rendu), le premier appel reste immédiat — la page ne doit pas rester vide.
+		 */
+		const polling = creerPolling(async () => {
+			try {
+				const etat = await appeler(routes.statut(id));
+				afficherAvancement(etat);
+
+				/*
+				 * Un rapport partiel est déjà lisible : on le charge à chaque tour pendant l'audit,
+				 * pour que le tableau se remplisse au fur et à mesure plutôt que d'apparaître d'un
+				 * coup à la fin.
+				 */
+				await chargerRapport(id, etat.finished);
+
+				if (etat.finished) {
+					rapportCharge = true;
+					return false;
+				}
+				return true;
+			} catch (erreur) {
+				/*
+				 * Une coupure réseau passagère ne doit pas effacer un rapport déjà affiché : on
+				 * n'abandonne que si l'audit est introuvable (donc supprimé) ou si rien n'a encore pu
+				 * être montré.
+				 */
+				if (erreur.genre === "introuvable") {
+					echouer("introuvable", erreur.message);
+					return false;
+				}
+				if (!rapportCharge) {
+					echouer(erreur.genre, erreur.message);
+					return false;
+				}
+				return true;
+			}
+		}, 2000, { immediat: !etatHydrate });
+
+		// Reflète l'état de pause du suivi dans l'interface.
+		document.addEventListener("visibilitychange", () => {
+			elements.pause.hidden = !document.hidden;
+		});
+
+		/* ------------------------------------------------------ avancement */
+
+		function afficherAvancement(etat) {
+			elements.cible.textContent = abregerUrl(etat.targetUrl, 80);
+			elements.statut.textContent = LIBELLE_STATUT[etat.status] || etat.status;
+
+			const pourcent = etat.progression?.pourcent ?? 0;
+			elements.pourcentage.textContent = `${pourcent} %`;
+			elements.jauge.value = pourcent;
+
+			/*
+			 * Le compte inclut les pages en erreur. C'est ce qui rend la jauge honnête : une page
+			 * qui a échoué a bien été traitée, elle avance le compteur, et l'omettre laisserait
+			 * croire à un audit bloqué. Le nombre d'erreurs est donc dit explicitement.
+			 */
+			const faites = etat.processedPages ?? 0;
+			const total = etat.totalPages ?? 0;
+			const erreurs = etat.errorPages ?? 0;
+
+			let compte = `${faites}/${total} page${total > 1 ? "s" : ""} traitée${faites > 1 ? "s" : ""}`;
+			if (erreurs > 0) {
+				compte += ` dont ${erreurs} en erreur`;
+			}
+			elements.compte.textContent = compte;
+
+			// `currentUrl` n'est renseignée que pendant qu'une page est effectivement mesurée.
+			if (etat.currentUrl && !etat.finished) {
+				elements.urlEnCours.textContent = etat.currentUrl;
+				elements.pageEnCours.hidden = false;
+			} else {
+				elements.pageEnCours.hidden = true;
+			}
+
+			/*
+			 * Temps restant : `null` dès que l'audit ne tourne plus, l'API s'en charge. Tant qu'il
+			 * existe, il recale le compte à rebours, qui décompte seul entre deux réponses.
+			 */
+			const restantMs = etat.progression?.restantMs;
+			const actif = typeof restantMs === "number" && restantMs > 0 && !etat.finished;
+			if (actif) {
+				chrono.caler(restantMs, {
+					mesuree: etat.progression?.estimationMesuree,
+					attente: etat.status === "queued",
+				});
+			} else {
+				chrono.arreter();
+			}
+			elements.blocChrono.hidden = !actif;
+			elements.pastille.hidden = !actif;
+			elements.restant.textContent = "";
+
+			// L'historique du navigateur suit le statut : c'est lui que liste « Mes audits ».
+			enregistrerAudit({ i: Number(id), u: abregerCible(etat.targetUrl), s: etat.status, v: Date.now() });
+
+			majBoutonArret(etat);
+		}
+
+		/**
+		 * Le bouton d'arrêt disparaît quand il n'y a plus rien à arrêter, et devient inerte quand
+		 * l'arrêt est déjà demandé : Chrome est fermé aussitôt, l'audit passe en « arrêté » au
+		 * tour de polling suivant.
+		 */
+		function majBoutonArret(etat) {
+			if (STATUTS_TERMINES.includes(etat.status)) {
+				elements.arreter.hidden = true;
+				return;
+			}
+			elements.arreter.hidden = false;
+
+			if (etat.cancelRequested) {
+				elements.arreter.disabled = true;
+				elements.libelleArreter.textContent = "Arrêt demandé…";
+			}
+		}
+
+		/* ---------------------------------------------- bouton d'arrêt */
+
+		elements.arreter.addEventListener("click", async () => {
+			/*
+			 * Confirmation avant d'appeler l'API : l'arrêt est irréversible — un audit arrêté ne
+			 * reprend pas, il faut en relancer un — et le bouton est à portée de clic accidentel
+			 * juste sous la jauge.
+			 */
+			const confirme = window.confirm(
+				"Arrêter l’audit maintenant ?\n\n" +
+					"Les pages déjà mesurées restent dans le rapport ; la page en cours est abandonnée " +
+					"et les pages restantes ne seront pas auditées. Un audit arrêté ne peut pas être " +
+					"repris : il faudra en relancer un.",
+			);
+			if (!confirme) return;
+
+			elements.arreter.disabled = true;
+			elements.libelleArreter.textContent = "Arrêt en cours…";
+
+			try {
+				await appeler(routes.arreter(id), { method: "POST" });
+				elements.libelleArreter.textContent = "Arrêt demandé…";
+			} catch (erreur) {
+				// 409 : déjà terminé entre-temps. Le prochain tour de polling le montrera.
+				if (erreur.statut !== 409) {
+					elements.arreter.disabled = false;
+					elements.libelleArreter.textContent = "Arrêter le scan";
+					window.alert(`L’arrêt n’a pas pu être demandé : ${erreur.message}`);
+				}
+			}
+		});
+
+		/* ---------------------------------------------------- rapport */
+
+		/** Récupère le rapport puis l'applique au DOM. */
+		async function chargerRapport(id, termine) {
+			appliquerRapport(await appeler(routes.rapport(id)), termine);
+		}
+
+		/**
+		 * Écrit un rapport dans la page.
+		 *
+		 * Séparé du fetch pour que l'hydratation initiale puisse réutiliser exactement le même
+		 * code sur les données déjà rendues par le serveur : un seul chemin de rendu, donc aucun
+		 * risque que le premier affichage diverge des suivants.
+		 */
+		function appliquerRapport(rapport, termine) {
+			// L'avertissement servi AVEC les données remplace celui écrit au build.
+			const zoneAvertissement = document.querySelector('[role="note"] p:last-child');
+			if (zoneAvertissement && rapport.ecoindexDisclaimer) {
+				zoneAvertissement.textContent = rapport.ecoindexDisclaimer;
+			}
+
+			if (rapport.pages.length > 0) {
+				// Résumé des moyennes gardé dans le cookie : l'accueil l'affiche dans les audits récents.
+				enregistrerAudit({ i: Number(id), ...resumerRapport(rapport), v: Date.now() });
+				afficherMoyennes(rapport.averages);
+				afficherLignes(rapport.pages);
+				elements.blocMoyennes.hidden = false;
+				elements.blocDetail.hidden = false;
+			}
+
+			if (termine) {
+				// L'avancement d'un audit fini n'a plus d'objet : seul le rapport compte.
+				elements.arreter.hidden = true;
+				elements.pause.hidden = true;
+				elements.restant.textContent = "";
+				chrono.arreter();
+				elements.blocChrono.hidden = true;
+				elements.pastille.hidden = true;
+
+				if (rapport.pages.length === 0) {
+					echouer(
+						"refus",
+						rapport.error ||
+							"Aucune page n’a pu être mesurée. Le site est peut-être inaccessible depuis " +
+								"notre serveur, ou son robots.txt en interdit l’exploration.",
+					);
+				}
+			}
+		}
+
+		/* -------------------------------------------------------- moyennes */
+
+		/** Un score sur 100, ou le tiret cadratin quand la mesure manque. */
+		const score = (valeur) =>
+			typeof valeur === "number" && !Number.isNaN(valeur) ? String(valeur) : "—";
+
+		/**
+		 * Couleur du chiffre aux seuils Lighthouse (90 / 50). Trois couleurs de TEXTE, toutes
+		 * au-delà de 4.5:1 sur l'obsidian — jamais le carmin, qui plafonne à 2,45:1.
+		 */
+		const classeScore = (valeur) => {
+			if (typeof valeur !== "number" || Number.isNaN(valeur)) return "text-cream-dark";
+			if (valeur >= 90) return "text-ok";
+			if (valeur >= 50) return "text-alerte";
+			return "text-echec";
+		};
+
+		/** Une valeur physique arrondie, suivie de son unité, ou « — ». */
+		const mesure = (valeur, unite, decimales = 1) =>
+			typeof valeur === "number" && !Number.isNaN(valeur)
+				? `${valeur.toFixed(decimales).replace(".", ",")} ${unite}`
+				: "—";
+
+		function afficherMoyennes(moyennes) {
+			remplirCarte("#carte-bureau", moyennes.desktop, [
+				"performance",
+				"accessibility",
+				"bestPractices",
+				"seo",
+			]);
+			remplirCarte("#carte-mobile", moyennes.mobile, [
+				"performance",
+				"accessibility",
+				"bestPractices",
+				"seo",
+			]);
+
+			const eco = moyennes.ecoindex;
+			const carteEco = document.querySelector("#carte-eco");
+			const valeursEco = carteEco.querySelectorAll("dd");
+
+			// La note A–G est un aplat carmin avec une lettre en crème dessus : lisible, et c'est
+			// le seul endroit où la couleur carmin porte un sens.
+			const pastille = carteEco.querySelector(".bg-primary");
+			if (pastille) pastille.textContent = eco.grade || "—";
+			const lectureNote = carteEco.querySelector(".sr-only");
+			if (lectureNote) lectureNote.textContent = `Note éco-index : ${eco.grade || "non calculée"}`;
+
+			const valeurs = [
+				{ texte: score(eco.score), classe: classeScore(eco.score), suffixe: true },
+				{ texte: mesure(eco.dom, "éléments", 0) },
+				{ texte: mesure(eco.requests, "requêtes", 0) },
+				{ texte: mesure(eco.sizeKo, "Ko") },
+				{ texte: mesure(eco.ghg, "g CO₂e", 2) },
+				{ texte: mesure(eco.water, "cl", 2) },
+			];
+
+			valeursEco.forEach((cellule, rang) => {
+				const valeur = valeurs[rang];
+				if (!valeur) return;
+				cellule.textContent = valeur.texte;
+				if (valeur.suffixe) {
+					cellule.className = `font-titre text-xl tabular-nums ${valeur.classe}`;
+					const unite = document.createElement("span");
+					unite.className = "text-xs text-cream-dark";
+					unite.textContent = " /100";
+					cellule.append(unite);
+				}
+			});
+		}
+
+		function remplirCarte(selecteur, donnees, cles) {
+			const cellules = document.querySelector(selecteur).querySelectorAll("dd");
+			cellules.forEach((cellule, rang) => {
+				const valeur = donnees[cles[rang]];
+				cellule.className = `font-titre text-xl tabular-nums ${classeScore(valeur)}`;
+				cellule.textContent = score(valeur);
+				const unite = document.createElement("span");
+				unite.className = "text-xs text-cream-dark";
+				unite.textContent = " /100";
+				cellule.append(unite);
+			});
+		}
+
+		/* ---------------------------------------------------- tableau détaillé */
+
+		function afficherLignes(pages) {
+			const erreurs = pages.filter((page) => page.status === "error").length;
+			elements.compteDetail.textContent =
+				erreurs > 0
+					? `${pages.length} page${pages.length > 1 ? "s" : ""} mesurée${pages.length > 1 ? "s" : ""}, dont ${erreurs} en erreur`
+					: `${pages.length} page${pages.length > 1 ? "s" : ""} mesurée${pages.length > 1 ? "s" : ""}`;
+
+			elements.lignes.replaceChildren(...pages.map(creerLigne));
+		}
+
+		function creerLigne(page) {
+			const ligne = document.createElement("tr");
+
+			// En-tête de ligne : `scope="row"` lie les cellules à l'URL de la page.
+			const cellUrl = document.createElement("th");
+			cellUrl.scope = "row";
+			cellUrl.className = "max-w-[18rem] p-3 text-left align-top font-normal";
+			const lien = document.createElement("a");
+			lien.href = page.url;
+			lien.rel = "noopener nofollow";
+			lien.target = "_blank";
+			lien.className = "break-all underline decoration-cream-dark hover:decoration-cream";
+			lien.textContent = abregerUrl(page.url, 48);
+			// Le libellé abrégé ne suffit pas hors contexte : l'URL complète va dans le titre.
+			lien.title = page.url;
+			cellUrl.append(lien);
+
+			const cellEtat = document.createElement("td");
+			cellEtat.className = "p-3 align-top";
+			if (page.status === "ok") {
+				cellEtat.className += " text-ok";
+				cellEtat.textContent = "Mesurée";
+			} else {
+				/*
+				 * « Audit impossible » en `text-echec` (#ff9d9f) et non en carmin : c'est du texte,
+				 * il doit passer le seuil AA de 4.5:1 — le carmin est à 2,45:1.
+				 */
+				cellEtat.className += " text-echec";
+				cellEtat.textContent = "Audit impossible";
+				if (page.error) {
+					const detail = document.createElement("span");
+					detail.className = "mt-1 block text-xs text-cream-muted";
+					detail.textContent = page.error;
+					cellEtat.append(detail);
+				}
+			}
+
+			ligne.append(cellUrl, cellEtat);
+
+			// Huit colonnes de scores : bureau puis mobile, dans l'ordre des en-têtes.
+			for (const groupe of ["desktopScores", "mobileScores"]) {
+				for (const cle of ["performance", "accessibility", "bestPractices", "seo"]) {
+					const valeur = page[groupe]?.[cle];
+					const cellule = document.createElement("td");
+					cellule.className = `p-2 text-right align-top tabular-nums ${classeScore(valeur)}`;
+					if (groupe === "mobileScores" && cle === "performance") {
+						cellule.className += " border-l border-obsidian-border";
+					}
+					cellule.textContent = score(valeur);
+					ligne.append(cellule);
+				}
+			}
+
+			const cellEco = document.createElement("td");
+			cellEco.className = "border-l border-obsidian-border p-3 text-right align-top tabular-nums";
+			if (page.ecoindex) {
+				cellEco.className += ` ${classeScore(page.ecoindex.score)}`;
+				cellEco.textContent = `${Math.round(page.ecoindex.score)}`;
+				const note = document.createElement("span");
+				note.className = "ml-1 text-xs text-cream-dark";
+				note.textContent = page.ecoindex.grade ? `(${page.ecoindex.grade})` : "";
+				cellEco.append(note);
+			} else {
+				cellEco.className += " text-cream-dark";
+				cellEco.textContent = "—";
+			}
+
+			// Durée réellement mesurée pour la page (`durationMs`), pas une estimation.
+			const cellDuree = document.createElement("td");
+			cellDuree.className = "p-3 text-right align-top tabular-nums text-cream-muted";
+			cellDuree.textContent = formaterDuree(page.durationMs);
+
+			ligne.append(cellEco, cellDuree);
+			return ligne;
+		}
+	}
+</script>

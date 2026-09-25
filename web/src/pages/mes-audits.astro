@@ -1,0 +1,229 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Icone from "../components/Icone.astro";
+import { LIBELLE_STATUT } from "../lib/api.js";
+import { routesServeur, chargerEtatInitial } from "../lib/api-serveur.js";
+import { abregerCible } from "../lib/historique.js";
+
+/**
+ * « Mes audits » — `/mes-audits`, RENDU À LA DEMANDE.
+ *
+ * La liste vient du serveur d'audit local (`GET /api/jobs`) : ce sont les audits enregistrés
+ * dans le dossier `data/`, quel que soit le navigateur qui les a lancés. Rendue côté serveur :
+ * la page est complète sans JavaScript, et ne clignote pas d'un état vide à un état rempli.
+ *
+ * Seuls « Supprimer » et « Tout effacer » demandent du JavaScript : ils appellent
+ * `DELETE /api/jobs/:id`, qui efface le fichier de l'audit.
+ */
+export const prerender = false;
+
+/* Liste vivante : jamais resservie depuis un cache. */
+Astro.response.headers.set("cache-control", "private, no-store");
+
+const chargement = await chargerEtatInitial(routesServeur.historique());
+const indisponible = chargement.cas === "ok" ? null : (chargement.message ?? "Le serveur d’audit local ne répond pas.");
+const jobs = chargement.cas === "ok" && Array.isArray(chargement.donnees?.jobs) ? chargement.donnees.jobs : [];
+
+const formatDate = new Intl.DateTimeFormat("fr-FR", {
+	dateStyle: "medium",
+	timeStyle: "short",
+});
+
+const nombre = (valeur) => (typeof valeur === "number" && Number.isFinite(valeur) ? Math.round(valeur) : null);
+
+/** Mêmes seuils et couleurs de texte (AA) que le rapport. */
+const classeScore = (valeur) => {
+	if (valeur === null) return "text-cream-dark";
+	if (valeur >= 90) return "text-ok";
+	if (valeur >= 50) return "text-alerte";
+	return "text-echec";
+};
+
+/** Un audit qui tourne encore ne peut pas être supprimé : il faut d'abord l'arrêter. */
+const ETATS_ACTIFS = ["discovering", "running"];
+
+const lignes = jobs.map((job) => ({
+	i: job.jobId,
+	u: abregerCible(job.targetUrl),
+	date: job.createdAt ? formatDate.format(new Date(job.createdAt)) : "",
+	actif: ETATS_ACTIFS.includes(job.status),
+	termine: job.status === "done",
+	statut: job.status ? (LIBELLE_STATUT[job.status] ?? job.status) : "Statut inconnu",
+	perfBureau: nombre(job.averages?.desktop?.performance),
+	perfMobile: nombre(job.averages?.mobile?.performance),
+	ecoNote: /^[A-G]$/.test(String(job.averages?.ecoindex?.grade)) ? job.averages.ecoindex.grade : null,
+}));
+---
+
+<Layout titre="Mes audits" large={true} sansCache={true}>
+	<header class="flex flex-wrap items-end justify-between gap-4 border-b filet pb-6">
+		<div>
+			<p class="libelle-hud flex items-center gap-2">
+				<Icone nom="document" taille={18} classe="text-primary" />
+				Historique de cette machine
+			</p>
+			<h1 class="mt-3 text-titre-page leading-tight">Mes audits</h1>
+			<p class="mt-3 max-w-2xl text-cream-muted">
+				Chaque audit est enregistré sur votre machine, dans le dossier <code>data/</code> du
+				projet. Rien n’est supprimé automatiquement : vous gardez vos rapports jusqu’à ce que
+				vous les effaciez.
+			</p>
+		</div>
+		{
+			lignes.some((ligne) => !ligne.actif) && (
+				<button type="button" id="tout-effacer" class="btn btn-ghost btn-sm gap-2 text-cream-muted">
+					<Icone nom="corbeille" taille={16} classe="text-primary" />
+					Tout effacer
+				</button>
+			)
+		}
+	</header>
+
+	{
+		lignes.length === 0 ? (
+			<section class="mt-10 flex flex-col items-center rounded-box border border-dashed border-obsidian-border px-6 py-16 text-center">
+				<Icone nom={indisponible ? "alerte" : "radar"} taille={36} classe="text-primary" />
+				<h2 class="mt-4 font-titre text-xl tracking-wide">
+					{indisponible ? "Historique indisponible" : "Aucun audit pour l’instant"}
+				</h2>
+				<p class="mt-2 max-w-md text-sm text-cream-muted">
+					{indisponible ?? "Chaque audit lancé apparaîtra ici, avec ses moyennes et son rapport complet."}
+				</p>
+				<a href="/" class="btn btn-primary mt-6 gap-2">
+					<Icone nom="loupe" taille={20} />
+					Lancer un audit
+				</a>
+			</section>
+		) : (
+			<ul id="liste-historique" class="mt-8 grid gap-3">
+				{lignes.map((ligne) => (
+					<li
+						data-audit={ligne.i}
+						class="group flex flex-col gap-4 rounded-box border border-obsidian-border bg-obsidian-card p-4 transition-colors duration-200 hover:border-cream-dark/40 sm:flex-row sm:items-center"
+					>
+						<a href={`/rapport/${ligne.i}`} class="min-w-0 flex-1">
+							<span class="flex items-center gap-2">
+								<span
+									class:list={[
+										"inline-block size-2 shrink-0 rounded-full",
+										ligne.termine ? "bg-ok" : "bg-cream-dark",
+									]}
+									aria-hidden="true"
+								></span>
+								<span class="truncate font-titre tracking-wide text-cream group-hover:underline">
+									{ligne.u || `Audit n° ${ligne.i}`}
+								</span>
+							</span>
+							<span class="mt-1 block text-xs text-cream-dark">
+								{ligne.date} · {ligne.statut}
+							</span>
+						</a>
+
+						<dl class="flex shrink-0 items-center gap-5 text-sm">
+							<div class="text-center">
+								<dt class="libelle-hud">Bureau</dt>
+								<dd class:list={["chiffres font-titre text-lg", classeScore(ligne.perfBureau)]}>
+									{ligne.perfBureau ?? "—"}
+								</dd>
+							</div>
+							<div class="text-center">
+								<dt class="libelle-hud">Mobile</dt>
+								<dd class:list={["chiffres font-titre text-lg", classeScore(ligne.perfMobile)]}>
+									{ligne.perfMobile ?? "—"}
+								</dd>
+							</div>
+							<div class="text-center">
+								<dt class="libelle-hud">Éco</dt>
+								<dd class="font-titre text-lg text-cream">{ligne.ecoNote ?? "—"}</dd>
+							</div>
+						</dl>
+
+						<div class="flex shrink-0 gap-1">
+							<a
+								href={`/?url=${encodeURIComponent(ligne.u || "")}`}
+								class="btn btn-ghost btn-sm gap-1.5 font-normal text-cream-muted"
+							>
+								<Icone nom="retour" taille={16} classe="text-primary" />
+								Relancer
+							</a>
+							<button
+								type="button"
+								data-supprimer={ligne.i}
+								disabled={ligne.actif}
+								class="btn btn-ghost btn-sm btn-square text-cream-muted"
+								aria-label={`Supprimer l’audit de ${ligne.u || `n° ${ligne.i}`}`}
+								title={ligne.actif ? "Audit en cours : arrêtez-le avant de le supprimer." : undefined}
+							>
+								<Icone nom="croix" taille={16} />
+							</button>
+						</div>
+					</li>
+				))}
+			</ul>
+		)
+	}
+
+	<p class="mt-10 text-sm text-cream-dark">
+		Supprimer un audit efface définitivement son fichier dans <code>data/</code>. Pour le garder
+		ailleurs, exportez-le d’abord en JSON depuis son rapport.
+	</p>
+</Layout>
+
+<script>
+	import { routes } from "../lib/api.js";
+	import { oublierAudit } from "../lib/historique.js";
+	import { appeler } from "../scripts/job.js";
+
+	/**
+	 * Supprime un audit côté serveur, puis de l'historique récent de ce navigateur.
+	 * Un 404 (déjà supprimé) n'est pas une erreur : le résultat est le même.
+	 */
+	async function supprimer(jobId) {
+		try {
+			await appeler(routes.supprimer(jobId), { method: "DELETE" });
+		} catch (erreur) {
+			if (erreur.genre !== "introuvable") throw erreur;
+		}
+		oublierAudit(jobId);
+	}
+
+	/* Supprimer une ligne : le fichier est effacé, la ligne disparaît sans recharger. */
+	document.querySelectorAll("[data-supprimer]").forEach((bouton) => {
+		bouton.addEventListener("click", async () => {
+			const confirme = window.confirm("Supprimer définitivement cet audit de votre machine ?");
+			if (!confirme) return;
+
+			bouton.disabled = true;
+			try {
+				await supprimer(bouton.dataset.supprimer);
+				bouton.closest("li")?.remove();
+				if (!document.querySelector("[data-audit]")) window.location.reload();
+			} catch (erreur) {
+				bouton.disabled = false;
+				window.alert(`La suppression a échoué : ${erreur.message}`);
+			}
+		});
+	});
+
+	document.querySelector("#tout-effacer")?.addEventListener("click", async () => {
+		const confirme = window.confirm(
+			"Effacer tous les audits enregistrés sur cette machine ?\n\n" +
+				"Les rapports seront perdus définitivement. Un audit en cours est conservé.",
+		);
+		if (!confirme) return;
+
+		const boutons = [...document.querySelectorAll("[data-supprimer]:not([disabled])")];
+		const echecs = [];
+		for (const bouton of boutons) {
+			try {
+				await supprimer(bouton.dataset.supprimer);
+			} catch (erreur) {
+				echecs.push(erreur.message);
+			}
+		}
+		if (echecs.length > 0) {
+			window.alert(`${echecs.length} audit(s) n’ont pas pu être supprimés : ${echecs[0]}`);
+		}
+		window.location.reload();
+	});
+</script>

@@ -1,0 +1,25 @@
+# dépendances
+node_modules/
+
+# audits enregistrés en local (un fichier JSON par audit)
+data/
+
+# sorties de build et types générés par Astro
+dist/
+.astro/
+
+# variables d'environnement
+.env
+.env.local
+.env.production
+
+# journaux
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# systèmes et éditeurs
+.DS_Store
+Thumbs.db
+.idea/
