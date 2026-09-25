@@ -164,7 +164,7 @@ export function isCancelRequested(jobId) {
  * aussitôt, l'utilisateur choisira ensuite lesquelles auditer.
  *
  * @param {string} targetUrl
- * @param {number} maxPages déjà plafonné par le serveur
+ * @param {number} maxPages nombre max de pages à découvrir, déjà validé
  * @returns {number} identifiant du job
  */
 export function createJob(targetUrl, maxPages) {

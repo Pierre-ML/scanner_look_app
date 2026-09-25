@@ -20,7 +20,7 @@
 
 /** Tous les fichiers du dossier, indexés par leur nom sans extension. */
 const fichiers = import.meta.glob("../assets/icons/*.svg", { eager: true, import: "default" });
-const icones = Object.fromEntries(
+const icones: Record<string, any> = Object.fromEntries(
 	Object.entries(fichiers).map(([chemin, composant]) => [chemin.split("/").pop().replace(/\.svg$/, ""), composant]),
 );
 

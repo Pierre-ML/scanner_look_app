@@ -4,7 +4,6 @@ import Icone from "../../components/Icone.astro";
 import AuditIndisponible from "../../components/AuditIndisponible.astro";
 import Chargeur from "../../components/Chargeur.astro";
 import { routesServeur, chargerEtatInitial } from "../../lib/api-serveur.js";
-import { PLAFOND_PAGES } from "../../lib/identite.js";
 
 /**
  * Sélection des pages à auditer — `/decouverte/[jobId]`, RENDUE À LA DEMANDE.
@@ -207,13 +206,16 @@ if (dejaLance) {
 			{/* ------------------------------------------------- lancement */}
 			<div class="mt-8 flex flex-col gap-4 border-t filet pt-6">
 				<p class="text-sm text-cream-muted" aria-live="polite">
-					<span id="resume-selection">Aucune page sélectionnée.</span>
+					<span id="resume-selection">Aucune page sélectionnée.</span>{" "}
 					<span class="text-cream-dark">
-						Plafond : {PLAFOND_PAGES} pages par audit. Environ 25 secondes par page.
+						Pas de limite de pages. Environ 25 secondes par page.
 					</span>
-					<span id="plafond-atteint" hidden class="mt-1 block text-alerte">
-						Plafond de {PLAFOND_PAGES} pages atteint : décochez une page pour en choisir une autre.
-					</span>
+					{/*
+					 * Avertissement, pas interdiction : au-delà de SEUIL_AUDIT_LONG pages cochées,
+					 * l'audit se compte en dizaines de minutes. Le texte (avec la durée estimée) est
+					 * écrit par le script.
+					 */}
+					<span id="avertissement-long" hidden class="mt-1 block text-alerte"></span>
 				</p>
 
 				<p id="erreur-lancement" role="alert" hidden class="flex items-start gap-2 text-sm text-echec">
@@ -221,15 +223,19 @@ if (dejaLance) {
 					<span id="erreur-lancement-texte"></span>
 				</p>
 
-				<div class="flex flex-wrap gap-3">
-					<button type="button" id="lancer-audit" class="btn btn-primary gap-2">
-						<Icone nom="fleche" taille={20} />
-						<span id="libelle-lancer">Lancer l’audit</span>
-					</button>
+				{/*
+				 * Retour à gauche, action principale à droite. Même ordre dans le HTML qu'à l'écran :
+				 * la navigation au clavier (Tab) suit ce que l'utilisateur voit.
+				 */}
+				<div class="flex flex-wrap items-center justify-between gap-3">
 					<a href="/" class="btn btn-ghost gap-2">
 						<Icone nom="retour" taille={20} />
 						Changer de site
 					</a>
+					<button type="button" id="lancer-audit" class="btn btn-primary gap-2">
+						<Icone nom="fleche" taille={20} />
+						<span id="libelle-lancer">Lancer l’audit</span>
+					</button>
 				</div>
 			</div>
 		</section>
@@ -258,12 +264,13 @@ if (dejaLance) {
 
 <script>
 	import { routes } from "../../lib/api.js";
-	import { PLAFOND_PAGES } from "../../lib/identite.js";
+	import { DUREE_PAGE_ESTIMEE_MS, SELECTION_PAR_DEFAUT, SEUIL_AUDIT_LONG } from "../../lib/identite.js";
 	import { abregerCible, enregistrerAudit } from "../../lib/historique.js";
 	import {
 		abregerUrl,
 		appeler,
 		creerPolling,
+		formaterDuree,
 		lireDonneesInitiales,
 		lireJobId,
 	} from "../../scripts/job.js";
@@ -273,7 +280,7 @@ if (dejaLance) {
 	 * qui garantit que l'utilisateur sans JavaScript voit le bloc <noscript> et RIEN d'autre,
 	 * plutôt qu'un écran de chargement qui ne finira jamais.
 	 */
-	const application = document.querySelector("#application");
+	const application = document.querySelector<HTMLElement>("#application");
 	application.hidden = false;
 
 	/** État déjà obtenu par le serveur : évite le premier aller-retour. */
@@ -282,9 +289,9 @@ if (dejaLance) {
 
 	/** Panneaux d'état, exclusifs les uns des autres. */
 	const panneaux = {
-		attente: document.querySelector("#etat-attente"),
-		liste: document.querySelector("#etat-liste"),
-		erreur: document.querySelector("#etat-erreur"),
+		attente: document.querySelector<HTMLElement>("#etat-attente"),
+		liste: document.querySelector<HTMLElement>("#etat-liste"),
+		erreur: document.querySelector<HTMLElement>("#etat-erreur"),
 	};
 
 	function montrer(nom) {
@@ -344,9 +351,9 @@ if (dejaLance) {
 		/** Origine de la cible, servie de garde-fou à l'ajout manuel. */
 		let origine = null;
 
-		const liste = document.querySelector("#liste-pages");
+		const liste = document.querySelector<HTMLElement>("#liste-pages");
 		const resume = document.querySelector("#resume-selection");
-		const boutonLancer = document.querySelector("#lancer-audit");
+		const boutonLancer = document.querySelector<HTMLButtonElement>("#lancer-audit");
 
 		/*
 		 * Poll de la découverte. L'API expose `ready` : vrai dès que des pages sont proposées et
@@ -384,7 +391,7 @@ if (dejaLance) {
 			if (!etat.ready) return true;
 
 			origine = lireOrigine(etat.targetUrl);
-			afficherPages(etat.discoveredUrls, etat.maxPages);
+			afficherPages(etat.discoveredUrls);
 			montrer("liste");
 			return false;
 		}
@@ -416,15 +423,16 @@ if (dejaLance) {
 
 		/* -------------------------------------------------- rendu de la liste */
 
-		function afficherPages(urls, maxPages) {
+		function afficherPages(urls) {
 			document.querySelector("#compteur-decouvertes").textContent = `(${urls.length})`;
 			document.querySelector("#prefixe-origine").textContent = origine ?? "";
 
 			/*
-			 * Les {PLAFOND_PAGES} premières pages sont cochées d'office : c'est l'ordre du plan de
-			 * site (ou de la découverte), donc en général l'accueil et les pages principales.
+			 * Les {SELECTION_PAR_DEFAUT} premières pages sont cochées d'office : c'est l'ordre du
+			 * plan de site (ou de la découverte), donc en général l'accueil et les pages
+			 * principales. Les autres restent à un clic, sans limite.
 			 */
-			liste.replaceChildren(...urls.map((url, rang) => creerLigne(url, false, rang < PLAFOND_PAGES)));
+			liste.replaceChildren(...urls.map((url, rang) => creerLigne(url, false, rang < SELECTION_PAR_DEFAUT)));
 			rafraichirResume();
 		}
 
@@ -466,51 +474,46 @@ if (dejaLance) {
 
 		/** Les cases cochées, dans l'ordre d'affichage. */
 		function selection() {
-			return [...liste.querySelectorAll('input[type="checkbox"]:checked')].map((c) => c.value);
+			return [...liste.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:checked')].map((c) => c.value);
 		}
 
 		/**
-		 * Met à jour le résumé et fait respecter le plafond : une fois {PLAFOND_PAGES} pages
-		 * cochées, les cases restantes sont désactivées. L'API applique le même plafond de son
-		 * côté ; le faire ici évite seulement une erreur au lancement.
+		 * Met à jour le résumé. Aucun plafond : au-delà de {SEUIL_AUDIT_LONG} pages cochées, on
+		 * prévient seulement que l'audit sera long, avec sa durée estimée.
 		 */
 		function rafraichirResume() {
 			const nombre = selection().length;
-			const plein = nombre >= PLAFOND_PAGES;
 
-			liste.querySelectorAll('input[type="checkbox"]').forEach((c) => {
-				c.disabled = plein && !c.checked;
-			});
-			document.querySelector("#plafond-atteint").hidden = !plein;
+			const avertissement = document.querySelector<HTMLElement>("#avertissement-long");
+			avertissement.hidden = nombre <= SEUIL_AUDIT_LONG;
+			if (nombre > SEUIL_AUDIT_LONG) {
+				avertissement.textContent =
+					`Attention : avec ${nombre} pages, l’audit peut être très long (environ ` +
+					`${formaterDuree(nombre * DUREE_PAGE_ESTIMEE_MS)}). Vous pourrez l’arrêter à tout ` +
+					"moment : les pages déjà mesurées seront conservées.";
+			}
 
 			resume.textContent =
 				nombre === 0
 					? "Aucune page sélectionnée."
-					: `${nombre}/${PLAFOND_PAGES} page${nombre > 1 ? "s" : ""} sélectionnée${nombre > 1 ? "s" : ""}.`;
+					: `${nombre} page${nombre > 1 ? "s" : ""} sélectionnée${nombre > 1 ? "s" : ""}.`;
 			boutonLancer.disabled = nombre === 0;
 		}
 
-		// « Tout cocher » s'arrête au plafond, dans l'ordre d'affichage.
 		document.querySelector("#tout-cocher").addEventListener("click", () => {
-			let restantes = PLAFOND_PAGES - selection().length;
-			liste.querySelectorAll('input[type="checkbox"]:not(:checked)').forEach((c) => {
-				if (restantes > 0) {
-					c.checked = true;
-					restantes -= 1;
-				}
-			});
+			liste.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((c) => (c.checked = true));
 			rafraichirResume();
 		});
 
 		document.querySelector("#tout-decocher").addEventListener("click", () => {
-			liste.querySelectorAll('input[type="checkbox"]').forEach((c) => (c.checked = false));
+			liste.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((c) => (c.checked = false));
 			rafraichirResume();
 		});
 
 		/* ------------------------------------------------------ ajout manuel */
 
-		const champ = document.querySelector("#chemin-manuel");
-		const zoneErreurAjout = document.querySelector("#erreur-ajout");
+		const champ = document.querySelector<HTMLInputElement>("#chemin-manuel");
+		const zoneErreurAjout = document.querySelector<HTMLElement>("#erreur-ajout");
 		const texteErreurAjout = document.querySelector("#erreur-ajout-texte");
 
 		function erreurAjout(message) {
@@ -553,12 +556,12 @@ if (dejaLance) {
 			candidate.hash = "";
 			const url = candidate.toString();
 
-			const deja = [...liste.querySelectorAll('input[type="checkbox"]')].find(
+			const deja = [...liste.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].find(
 				(c) => c.value === url,
 			);
 			if (deja) {
-				// Plutôt qu'un doublon : on recoche la ligne existante (dans la limite du plafond).
-				if (!deja.checked && selection().length < PLAFOND_PAGES) deja.checked = true;
+				// Plutôt qu'un doublon : on recoche la ligne existante.
+				deja.checked = true;
 				deja.closest("li")?.scrollIntoView({ block: "nearest" });
 				erreurAjout("Cette page figurait déjà dans la liste : elle a été cochée.");
 				champ.value = "";
@@ -566,13 +569,7 @@ if (dejaLance) {
 				return;
 			}
 
-			const place = selection().length < PLAFOND_PAGES;
-			liste.append(creerLigne(url, true, place));
-			if (!place) {
-				erreurAjout(
-					`Page ajoutée, mais non cochée : le plafond de ${PLAFOND_PAGES} pages est atteint.`,
-				);
-			}
+			liste.append(creerLigne(url, true, true));
 			champ.value = "";
 			rafraichirResume();
 			champ.focus();
@@ -591,7 +588,7 @@ if (dejaLance) {
 		/* --------------------------------------------------------- lancement */
 
 		const libelleLancer = document.querySelector("#libelle-lancer");
-		const zoneErreurLancement = document.querySelector("#erreur-lancement");
+		const zoneErreurLancement = document.querySelector<HTMLElement>("#erreur-lancement");
 		const texteErreurLancement = document.querySelector("#erreur-lancement-texte");
 
 		boutonLancer.addEventListener("click", async () => {

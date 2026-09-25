@@ -146,6 +146,9 @@ export function effacerHistorique() {
 /**
  * Résumé compact d'un rapport de l'API, prêt à être stocké.
  * Scores arrondis : une décimale ne vaut pas les octets qu'elle coûte ici.
+ *
+ * @param {any} rapport réponse de `GET /api/report/:jobId`
+ * @returns {Partial<EntreeHistorique>}
  */
 export function resumerRapport(rapport) {
 	const arrondir = (valeur) =>

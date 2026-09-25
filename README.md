@@ -52,7 +52,9 @@ pages déjà mesurées sont gardées) et Chrome est fermé. Si Windows demande
 1. **Découverte.** Saisissez une adresse (`exemple.fr` suffit). Les pages sont trouvées dans le
    plan du site (`sitemap.xml`), sinon en suivant les liens internes. Le `robots.txt` est
    respecté.
-2. **Sélection.** Cochez jusqu'à 8 pages, ou ajoutez-en à la main (même site uniquement).
+2. **Sélection.** Cochez les pages à auditer, sans limite de nombre, ou ajoutez-en à la main
+   (même site uniquement). Les 8 premières sont cochées d'office. Au-delà de 15 pages,
+   l'interface prévient que l'audit sera long et en estime la durée.
 3. **Rapport.** Chaque page passe deux fois dans Lighthouse (bureau, puis mobile), soit environ
    25 secondes par page. Les résultats s'affichent au fur et à mesure. Le bouton
    **Arrêter le scan** interrompt l'audit immédiatement, en gardant les pages terminées.
@@ -80,6 +82,7 @@ Tout fonctionne sans configuration. Pour changer un réglage, copiez `.env.examp
 | `CHROME_PATH` | détection automatique | Chemin complet de `chrome.exe` (ou d'un autre Chromium) à utiliser. |
 | `ECO_AUDIT_RUN_TIMEOUT` | `180000` | Durée maximale d'un passage Lighthouse, en millisecondes. Au-delà, Chrome est arrêté et la page est marquée en erreur. |
 | `ECO_AUDIT_DESKTOP_THROTTLING` | `provided` | `provided` : aucune simulation en bureau, on mesure votre machine telle quelle. `simulate` : réglage bureau officiel de Lighthouse, celui de PageSpeed Insights. |
+| `ECO_AUDIT_MAX_DECOUVERTE` | `500` | Nombre maximal de pages proposées par la découverte. Ce n'est pas une limite d'audit : c'est un garde-fou pour que le crawl d'un très gros site se termine. Les pages ajoutées à la main ne comptent pas. |
 | `ECO_AUDIT_DISABLE_GPU` | `0` | `1` désactive l'accélération graphique de Chrome (voir « Un audit reste bloqué »). |
 
 La détection automatique cherche Chrome dans `%ProgramFiles%`, `%ProgramFiles(x86)%` puis
@@ -144,6 +147,10 @@ Dans les deux cas, les deux programmes s'arrêtent aussitôt, avec un message da
 - `[web] Port 4321 is already in use` : même chose pour l'interface. Fermez le programme
   concerné, ou choisissez un autre port avec `WEB_PORT=4400` dans `.env`, puis ouvrez
   `http://localhost:4400`.
+
+- `[web] Another astro dev server is already running` : eco-audit tourne déjà dans un autre
+  terminal (Astro n'accepte qu'une interface à la fois par projet). Utilisez celle-là, ou
+  fermez-la avec Ctrl+C avant de relancer `npm run dev`.
 
 Pour trouver le programme qui occupe un port (PowerShell) :
 

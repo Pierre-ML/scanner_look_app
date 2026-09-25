@@ -2,7 +2,7 @@
  * Validation des entrées du formulaire / de l'API.
  */
 
-import { DEFAULT_MAX_PAGES, HARD_CAP } from './config.js';
+import { LIMITE_DECOUVERTE } from './config.js';
 
 /**
  * Valide et normalise une URL de site.
@@ -50,17 +50,16 @@ export function validateUrl(raw) {
 }
 
 /**
- * Valide le nombre de pages demandé et applique le plafond serveur.
- * Une valeur absente ou aberrante retombe sur la valeur par défaut.
+ * Valide le nombre de pages à découvrir. Absent ou aberrant : la limite de
+ * découverte complète. Jamais au-delà de cette limite (garde-fou du crawl).
  *
  * @param {unknown} raw
- * @returns {number} entier dans [1, HARD_CAP]
+ * @returns {number} entier dans [1, LIMITE_DECOUVERTE]
  */
 export function validateMaxPages(raw) {
   const parsed = Number.parseInt(raw, 10);
 
-  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_MAX_PAGES;
+  if (!Number.isFinite(parsed) || parsed < 1) return LIMITE_DECOUVERTE;
 
-  // Plafond non négociable, même si le client envoie 10 000.
-  return Math.min(parsed, HARD_CAP);
+  return Math.min(parsed, LIMITE_DECOUVERTE);
 }

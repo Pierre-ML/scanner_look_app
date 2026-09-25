@@ -89,7 +89,7 @@ const {
 	 * Un `MutationObserver` sur l'attribut `hidden` détecte l'apparition : les pages n'ont
 	 * qu'à lever `hidden`, sans connaître ce script.
 	 */
-	for (const chargeur of document.querySelectorAll("[data-chargeur]")) {
+	for (const chargeur of document.querySelectorAll<HTMLElement>("[data-chargeur]")) {
 		const phases = JSON.parse(chargeur.dataset.phases || "[]");
 		const zonePhase = chargeur.querySelector("[data-chargeur-phase]");
 		const zoneEcoule = chargeur.querySelector("[data-chargeur-ecoule]");

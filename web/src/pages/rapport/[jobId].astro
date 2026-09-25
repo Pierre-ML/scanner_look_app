@@ -2,7 +2,8 @@
 import Layout from "../../layouts/Layout.astro";
 import Icone from "../../components/Icone.astro";
 import BandeauEcoindex from "../../components/BandeauEcoindex.astro";
-import CarteScore from "../../components/CarteScore.astro";
+import CarteJauges from "../../components/CarteJauges.astro";
+import CarteEcoindex from "../../components/CarteEcoindex.astro";
 import TableauResultats from "../../components/TableauResultats.astro";
 import AuditIndisponible from "../../components/AuditIndisponible.astro";
 import { routes, LIBELLE_STATUT } from "../../lib/api.js";
@@ -304,52 +305,44 @@ const urlExport = routes.exporter(jobId);
 
 		{/* ======================================================= moyennes */}
 		<section id="bloc-moyennes" hidden={!(rapport?.pages?.length > 0)} class="mt-10">
-			<h2 class="text-xl tracking-wide">Moyennes</h2>
-			<p class="mt-1 text-sm text-cream-muted">
-				Calculées sur les pages mesurées avec succès : une page en erreur ne tire pas les
-				moyennes vers le bas.
-			</p>
+			<div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+				<div>
+					<h2 class="text-xl tracking-wide">Moyennes</h2>
+					<p class="mt-1 text-sm text-cream-muted">
+						Calculées sur les pages mesurées avec succès : une page en erreur ne tire pas les
+						moyennes vers le bas.
+					</p>
+				</div>
 
-			<div class="mt-4 grid gap-4 lg:grid-cols-3">
+				{/*
+				 * Légende des seuils, comme dans Lighthouse : une FORME par tranche en plus de la
+				 * couleur (triangle, carré, rond), pour qui ne distingue pas les couleurs.
+				 */}
+				<ul class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-cream-muted" aria-label="Légende des scores">
+					<li class="flex items-center gap-1.5">
+						<span class="inline-block size-2.5 bg-echec [clip-path:polygon(50%_0,100%_100%,0_100%)]" aria-hidden="true"></span>
+						0–49
+					</li>
+					<li class="flex items-center gap-1.5">
+						<span class="inline-block size-2.5 bg-alerte" aria-hidden="true"></span>
+						50–89
+					</li>
+					<li class="flex items-center gap-1.5">
+						<span class="inline-block size-2.5 rounded-full bg-ok" aria-hidden="true"></span>
+						90–100
+					</li>
+				</ul>
+			</div>
+
+			<div class="mt-5 grid gap-4 lg:grid-cols-2">
 				<div id="carte-bureau">
-					<CarteScore
-						titre="Bureau"
-						icone="bureau"
-						lignes={[
-							{ nom: "Performance", valeur: null, cle: "performance" },
-							{ nom: "Accessibilité", valeur: null, cle: "accessibility" },
-							{ nom: "Bonnes pratiques", valeur: null, cle: "bestPractices" },
-							{ nom: "Référencement", valeur: null, cle: "seo" },
-						]}
-					/>
+					<CarteJauges titre="Bureau" icone="bureau" moyennes={rapport?.averages?.desktop} />
 				</div>
 				<div id="carte-mobile">
-					<CarteScore
-						titre="Mobile"
-						icone="mobile"
-						lignes={[
-							{ nom: "Performance", valeur: null, cle: "performance" },
-							{ nom: "Accessibilité", valeur: null, cle: "accessibility" },
-							{ nom: "Bonnes pratiques", valeur: null, cle: "bestPractices" },
-							{ nom: "Référencement", valeur: null, cle: "seo" },
-						]}
-					/>
+					<CarteJauges titre="Mobile" icone="mobile" moyennes={rapport?.averages?.mobile} />
 				</div>
-				<div id="carte-eco">
-					<CarteScore
-						titre="Éco-index"
-						icone="feuille"
-						note="—"
-						detail="estimation locale"
-						lignes={[
-							{ nom: "Score", valeur: null, cle: "score" },
-							{ nom: "Éléments du DOM", valeur: "—", brut: true, cle: "dom" },
-							{ nom: "Requêtes", valeur: "—", brut: true, cle: "requests" },
-							{ nom: "Poids transféré", valeur: "—", brut: true, cle: "sizeKo" },
-							{ nom: "GES estimés", valeur: "—", brut: true, cle: "ghg" },
-							{ nom: "Eau estimée", valeur: "—", brut: true, cle: "water" },
-						]}
-					/>
+				<div class="lg:col-span-2">
+					<CarteEcoindex eco={rapport?.averages?.ecoindex} />
 				</div>
 			</div>
 		</section>
@@ -422,25 +415,25 @@ const urlExport = routes.exporter(jobId);
 	const jobId = lireJobId();
 
 	const elements = {
-		cible: document.querySelector("#cible"),
-		statut: document.querySelector("#libelle-statut"),
-		pourcentage: document.querySelector("#pourcentage"),
-		jauge: document.querySelector("#jauge"),
-		compte: document.querySelector("#compte"),
-		pageEnCours: document.querySelector("#page-en-cours"),
-		urlEnCours: document.querySelector("#url-en-cours"),
-		restant: document.querySelector("#restant"),
-		pause: document.querySelector("#pause-polling"),
-		arreter: document.querySelector("#arreter"),
-		libelleArreter: document.querySelector("#libelle-arreter"),
-		blocAvancement: document.querySelector("#bloc-avancement"),
-		blocMoyennes: document.querySelector("#bloc-moyennes"),
-		blocDetail: document.querySelector("#bloc-detail"),
-		compteDetail: document.querySelector("#compte-detail"),
-		lignes: document.querySelector("#lignes-resultats"),
-		erreur: document.querySelector("#etat-erreur"),
-		blocChrono: document.querySelector("#bloc-chrono"),
-		pastille: document.querySelector("#pastille-statut"),
+		cible: document.querySelector<HTMLElement>("#cible"),
+		statut: document.querySelector<HTMLElement>("#libelle-statut"),
+		pourcentage: document.querySelector<HTMLElement>("#pourcentage"),
+		jauge: document.querySelector<HTMLProgressElement>("#jauge"),
+		compte: document.querySelector<HTMLElement>("#compte"),
+		pageEnCours: document.querySelector<HTMLElement>("#page-en-cours"),
+		urlEnCours: document.querySelector<HTMLElement>("#url-en-cours"),
+		restant: document.querySelector<HTMLElement>("#restant"),
+		pause: document.querySelector<HTMLElement>("#pause-polling"),
+		arreter: document.querySelector<HTMLButtonElement>("#arreter"),
+		libelleArreter: document.querySelector<HTMLElement>("#libelle-arreter"),
+		blocAvancement: document.querySelector<HTMLElement>("#bloc-avancement"),
+		blocMoyennes: document.querySelector<HTMLElement>("#bloc-moyennes"),
+		blocDetail: document.querySelector<HTMLElement>("#bloc-detail"),
+		compteDetail: document.querySelector<HTMLElement>("#compte-detail"),
+		lignes: document.querySelector<HTMLElement>("#lignes-resultats"),
+		erreur: document.querySelector<HTMLElement>("#etat-erreur"),
+		blocChrono: document.querySelector<HTMLElement>("#bloc-chrono"),
+		pastille: document.querySelector<HTMLElement>("#pastille-statut"),
 	};
 
 	const chrono = creerChrono({
@@ -732,85 +725,101 @@ const urlExport = routes.exporter(jobId);
 
 		/* -------------------------------------------------------- moyennes */
 
+		/*
+		 * Ces utilitaires sont des déclarations `function`, et non des `const` : l'hydratation,
+		 * plus haut dans `suivre`, les appelle AVANT d'avoir atteint ces lignes. Une `const`
+		 * n'existe qu'une fois sa ligne exécutée — rouvrir un rapport terminé plantait le script.
+		 * Une fonction déclarée, elle, est disponible dès l'entrée dans `suivre`.
+		 */
+
 		/** Un score sur 100, ou le tiret cadratin quand la mesure manque. */
-		const score = (valeur) =>
-			typeof valeur === "number" && !Number.isNaN(valeur) ? String(valeur) : "—";
+		function score(valeur) {
+			return typeof valeur === "number" && !Number.isNaN(valeur) ? String(valeur) : "—";
+		}
 
 		/**
 		 * Couleur du chiffre aux seuils Lighthouse (90 / 50). Trois couleurs de TEXTE, toutes
 		 * au-delà de 4.5:1 sur l'obsidian — jamais le carmin, qui plafonne à 2,45:1.
 		 */
-		const classeScore = (valeur) => {
+		function classeScore(valeur) {
 			if (typeof valeur !== "number" || Number.isNaN(valeur)) return "text-cream-dark";
 			if (valeur >= 90) return "text-ok";
 			if (valeur >= 50) return "text-alerte";
 			return "text-echec";
-		};
-
-		/** Une valeur physique arrondie, suivie de son unité, ou « — ». */
-		const mesure = (valeur, unite, decimales = 1) =>
-			typeof valeur === "number" && !Number.isNaN(valeur)
-				? `${valeur.toFixed(decimales).replace(".", ",")} ${unite}`
-				: "—";
-
-		function afficherMoyennes(moyennes) {
-			remplirCarte("#carte-bureau", moyennes.desktop, [
-				"performance",
-				"accessibility",
-				"bestPractices",
-				"seo",
-			]);
-			remplirCarte("#carte-mobile", moyennes.mobile, [
-				"performance",
-				"accessibility",
-				"bestPractices",
-				"seo",
-			]);
-
-			const eco = moyennes.ecoindex;
-			const carteEco = document.querySelector("#carte-eco");
-			const valeursEco = carteEco.querySelectorAll("dd");
-
-			// La note A–G est un aplat carmin avec une lettre en crème dessus : lisible, et c'est
-			// le seul endroit où la couleur carmin porte un sens.
-			const pastille = carteEco.querySelector(".bg-primary");
-			if (pastille) pastille.textContent = eco.grade || "—";
-			const lectureNote = carteEco.querySelector(".sr-only");
-			if (lectureNote) lectureNote.textContent = `Note éco-index : ${eco.grade || "non calculée"}`;
-
-			const valeurs = [
-				{ texte: score(eco.score), classe: classeScore(eco.score), suffixe: true },
-				{ texte: mesure(eco.dom, "éléments", 0) },
-				{ texte: mesure(eco.requests, "requêtes", 0) },
-				{ texte: mesure(eco.sizeKo, "Ko") },
-				{ texte: mesure(eco.ghg, "g CO₂e", 2) },
-				{ texte: mesure(eco.water, "cl", 2) },
-			];
-
-			valeursEco.forEach((cellule, rang) => {
-				const valeur = valeurs[rang];
-				if (!valeur) return;
-				cellule.textContent = valeur.texte;
-				if (valeur.suffixe) {
-					cellule.className = `font-titre text-xl tabular-nums ${valeur.classe}`;
-					const unite = document.createElement("span");
-					unite.className = "text-xs text-cream-dark";
-					unite.textContent = " /100";
-					cellule.append(unite);
-				}
-			});
 		}
 
-		function remplirCarte(selecteur, donnees, cles) {
-			const cellules = document.querySelector(selecteur).querySelectorAll("dd");
-			cellules.forEach((cellule, rang) => {
-				const valeur = donnees[cles[rang]];
-				cellule.className = `font-titre text-xl tabular-nums ${classeScore(valeur)}`;
-				cellule.textContent = score(valeur);
-				const unite = document.createElement("span");
-				unite.className = "text-xs text-cream-dark";
-				unite.textContent = " /100";
-				cellule.append(unite);
+		/** Une valeur physique arrondie, suivie de son unité, ou « — ». */
+		function mesure(valeur, unite, decimales = 1) {
+			return typeof valeur === "number" && !Number.isNaN(valeur)
+				? `${valeur.toFixed(decimales).replace(".", ",")} ${unite}`
+				: "—";
+		}
+
+		/** Couleur de la note éco-index A–G. Même table que `CarteEcoindex.astro`. */
+		function couleurNote(note) {
+			if (note === "A" || note === "B") return "text-ok";
+			if (note === "C" || note === "D") return "text-alerte";
+			if (typeof note === "string" && /^[E-G]$/.test(note)) return "text-echec";
+			return "text-cream-dark";
+		}
+
+		/**
+		 * Met une jauge à jour sans la recréer (voir `JaugeScore.astro`) : l'anneau glisse
+		 * jusqu'à sa nouvelle valeur (transition de daisyUI) au lieu de clignoter.
+		 *
+		 * `conteneur` : l'élément `[data-jauge]`. `valeur` : score sur 100, ou `null` si la mesure
+		 * manque. `options` : contenu et couleur imposés (note éco-index) ; sinon le chiffre et la
+		 * couleur des seuils Lighthouse.
+		 */
+		function majJauge(
+			conteneur: HTMLElement,
+			valeur: number | null,
+			options: { texte?: string; couleur?: string } = {},
+		) {
+			const cercle = conteneur.querySelector<HTMLElement>(".radial-progress");
+			const mesuree = typeof valeur === "number" && !Number.isNaN(valeur);
+			const arrondi = mesuree ? Math.round(valeur) : 0;
+			const libelle = conteneur.querySelector("p")?.textContent ?? "";
+
+			cercle.style.setProperty("--value", String(arrondi));
+			// Couleurs qu'une jauge peut porter : retirées avant d'en poser une.
+			cercle.classList.remove("text-ok", "text-alerte", "text-echec", "text-cream-dark");
+			cercle.classList.add(options.couleur ?? classeScore(mesuree ? arrondi : null));
+			if (mesuree) cercle.setAttribute("aria-valuenow", String(arrondi));
+			else cercle.removeAttribute("aria-valuenow");
+			cercle.setAttribute("aria-valuetext", mesuree ? `${libelle} : ${arrondi} sur 100` : `${libelle} : non mesuré`);
+
+			conteneur.querySelector("[data-jauge-texte]").textContent =
+				options.texte ?? (mesuree ? String(arrondi) : "—");
+		}
+
+		function afficherMoyennes(moyennes) {
+			for (const [selecteur, donnees] of [
+				["#carte-bureau", moyennes.desktop],
+				["#carte-mobile", moyennes.mobile],
+			]) {
+				document.querySelectorAll<HTMLElement>(`${selecteur} [data-jauge]`).forEach((jauge) => {
+					majJauge(jauge, donnees?.[jauge.dataset.jauge] ?? null);
+				});
+			}
+
+			const eco = moyennes.ecoindex ?? {};
+			const note = /^[A-G]$/.test(String(eco.grade)) ? eco.grade : null;
+			majJauge(document.querySelector<HTMLElement>('#carte-eco [data-jauge="eco"]'), eco.score ?? null, {
+				texte: note ?? "—",
+				couleur: couleurNote(note),
+			});
+
+			const valeursEco = {
+				score: mesure(eco.score, "/100"),
+				dom: mesure(eco.dom, "éléments", 0),
+				requests: mesure(eco.requests, "requêtes", 0),
+				sizeKo: mesure(eco.sizeKo, "Ko"),
+				ghg: mesure(eco.ghg, "g CO₂e", 2),
+				water: mesure(eco.water, "cl", 2),
+			};
+			document.querySelectorAll<HTMLElement>("#carte-eco [data-eco]").forEach((cellule) => {
+				cellule.textContent = valeursEco[cellule.dataset.eco] ?? "—";
 			});
 		}
 

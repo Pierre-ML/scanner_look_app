@@ -6,15 +6,17 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Plafond absolu du nombre de pages auditées, appliqué côté serveur quelles
- * que soient les valeurs envoyées par le client.
- * Un audit = 2 runs Lighthouse par page, soit ~25 s : 8 pages tiennent en un
- * peu plus de trois minutes.
+ * Nombre maximal de pages PROPOSÉES par la découverte (sitemap ou crawl).
+ *
+ * Ce n'est pas un plafond d'audit : en local, l'utilisateur audite autant de
+ * pages qu'il veut, y compris des pages ajoutées à la main. C'est un garde-fou
+ * pour la découverte elle-même — sans lui, le crawl d'un gros site (boutique,
+ * forum) ne se terminerait jamais. Réglable avec ECO_AUDIT_MAX_DECOUVERTE.
  */
-export const HARD_CAP = 8;
-
-/** Valeur pré-remplie dans le formulaire. */
-export const DEFAULT_MAX_PAGES = 8;
+export const LIMITE_DECOUVERTE = (() => {
+  const n = Math.floor(Number(process.env.ECO_AUDIT_MAX_DECOUVERTE));
+  return Number.isFinite(n) && n >= 1 ? n : 500;
+})();
 
 /**
  * Port du serveur Fastify. L'interface (astro dev, port 4321) relaie `/api`

@@ -1,0 +1,5 @@
+{
+  // Tailwind CSS 4 (@plugin, @theme, @custom-variant…) : l'analyseur CSS intégré de VS Code
+  // ne connaît pas ces règles. L'extension Tailwind CSS IntelliSense les prend en charge.
+  "css.lint.unknownAtRules": "ignore"
+}

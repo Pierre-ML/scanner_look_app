@@ -39,7 +39,7 @@ import {
 import { trouverNavigateur } from '../lib/chrome.js';
 import { MODE_THROTTLING_BUREAU } from '../lib/audit.js';
 import { getEcoIndexGrade } from '../lib/ecoindex.js';
-import { DUREE_PAGE_ESTIMEE_MS, ECOINDEX_DISCLAIMER, HARD_CAP } from '../lib/config.js';
+import { DUREE_PAGE_ESTIMEE_MS, ECOINDEX_DISCLAIMER, LIMITE_DECOUVERTE } from '../lib/config.js';
 import { validateMaxPages, validateUrl } from '../lib/validate.js';
 import { normalizeUrl } from '../lib/http.js';
 
@@ -102,7 +102,7 @@ export default async function apiRoutes(fastify) {
       jobId,
       url: urlCheck.url,
       maxPages,
-      hardCap: HARD_CAP,
+      limiteDecouverte: LIMITE_DECOUVERTE,
       status: 'discovering',
     });
   });
@@ -123,7 +123,7 @@ export default async function apiRoutes(fastify) {
       sitemapUsed: job.sitemapUsed,
       discoveredUrls: job.discoveredUrls,
       maxPages: job.maxPages,
-      hardCap: HARD_CAP,
+      limiteDecouverte: LIMITE_DECOUVERTE,
       error: job.error,
     });
   });
@@ -381,7 +381,6 @@ function validerSelection(urls, job) {
     return { ok: false, error: 'Sélectionnez au moins une page à auditer.' };
   }
 
-  const plafond = Math.min(job.maxPages, HARD_CAP);
   let origineCible;
   try {
     origineCible = new URL(job.targetUrl).origin;
@@ -421,13 +420,8 @@ function validerSelection(urls, job) {
     return { ok: false, error: 'Aucune page valide dans la sélection.' };
   }
 
-  if (retenues.length > plafond) {
-    return {
-      ok: false,
-      error: `Maximum ${plafond} pages par audit (${retenues.length} demandées).`,
-    };
-  }
-
+  // Pas de plafond : en local, l'utilisateur audite autant de pages qu'il veut
+  // (l'interface le prévient au-delà de 15 pages que ce sera long).
   return { ok: true, urls: retenues };
 }
 

@@ -1,0 +1,64 @@
+---
+/**
+ * Jauge circulaire d'un score, à la manière de Lighthouse : un anneau qui se remplit de 0 à
+ * 100, un disque teinté, le chiffre au centre et le libellé dessous.
+ *
+ * Construite sur `radial-progress` de daisyUI : l'arc (bouts arrondis, animé) prend la
+ * couleur du texte (`currentColor`) ; `bg-current/10` teinte le disque de la même couleur,
+ * très atténuée — c'est le principe visuel de Lighthouse.
+ *
+ * Mêmes seuils que Lighthouse (90 / 50) et mêmes couleurs de TEXTE que le reste du rapport,
+ * toutes au-delà de 4.5:1 sur l'obsidian. La couleur n'est jamais seule à porter
+ * l'information : le chiffre est écrit au centre, et `aria-valuetext` le dit en toutes
+ * lettres.
+ *
+ * `data-jauge` porte la clé du score dans `averages` : le script du rapport met la jauge à
+ * jour à chaque tour de suivi, sans la recréer (voir `majJauge`).
+ */
+
+const {
+	/** Libellé affiché sous le cercle. */
+	libelle,
+	/** Clé du score dans `averages.desktop` / `averages.mobile` (ex. `performance`). */
+	cle,
+	/** Score sur 100, ou `null` si la mesure manque (tiret, anneau vide). */
+	valeur = null,
+	/** Contenu du cercle à la place du chiffre (ex. la note éco-index). */
+	texte = null,
+	/** Classe de couleur imposée (ex. note éco-index) ; sinon, les seuils Lighthouse. */
+	couleur = null,
+	/** `lg` : jauge principale ; `md` : jauges des cartes bureau et mobile. */
+	taille = "md",
+} = Astro.props;
+
+const mesuree = typeof valeur === "number" && !Number.isNaN(valeur);
+const arrondi = mesuree ? Math.round(valeur) : 0;
+
+const couleurSeuil = !mesuree
+	? "text-cream-dark"
+	: arrondi >= 90
+		? "text-ok"
+		: arrondi >= 50
+			? "text-alerte"
+			: "text-echec";
+
+const dimensions =
+	taille === "lg"
+		? "[--size:7rem] [--thickness:0.5rem] text-4xl"
+		: "[--size:4.75rem] [--thickness:0.375rem] text-2xl";
+---
+
+<div class="flex flex-col items-center gap-2.5 text-center" data-jauge={cle}>
+	<div
+		class:list={["radial-progress bg-current/10 font-titre tabular-nums", dimensions, couleur ?? couleurSeuil]}
+		style={`--value:${arrondi};`}
+		role="progressbar"
+		aria-valuemin="0"
+		aria-valuemax="100"
+		aria-valuenow={mesuree ? arrondi : undefined}
+		aria-valuetext={mesuree ? `${libelle} : ${arrondi} sur 100` : `${libelle} : non mesuré`}
+	>
+		<span data-jauge-texte aria-hidden="true">{texte ?? (mesuree ? arrondi : "—")}</span>
+	</div>
+	<p class="text-sm leading-tight text-cream-muted" aria-hidden="true">{libelle}</p>
+</div>

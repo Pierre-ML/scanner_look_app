@@ -149,7 +149,7 @@ const titreComplet = titre ? `${titre} — ${SITE.nom}` : SITE.titre;
 			 */
 			import { routes } from "../lib/api.js";
 
-			const pastille = document.querySelector("[data-compteur-audits]");
+			const pastille = document.querySelector<HTMLElement>("[data-compteur-audits]");
 			fetch(routes.historique(), { headers: { Accept: "application/json" }, cache: "no-store" })
 				.then((reponse) => (reponse.ok ? reponse.json() : null))
 				.then((corps) => {

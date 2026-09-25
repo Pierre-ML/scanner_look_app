@@ -28,7 +28,7 @@ import {
 } from './store.js';
 import { auditPage, closeBrowser, killBrowser, launchBrowser } from './audit.js';
 import { discoverPages } from './discover.js';
-import { HARD_CAP } from './config.js';
+import { LIMITE_DECOUVERTE } from './config.js';
 
 /** Journal des tâches : le logger Fastify, branché par server.js. */
 let journal = console;
@@ -84,9 +84,9 @@ async function runDiscovery(jobId) {
 
   journal.info({ jobId, url: job.targetUrl }, 'découverte des pages');
 
-  // Le plafond serveur s'applique même si le fichier contenait une valeur plus
-  // élevée (modification manuelle…).
-  const limit = Math.min(job.maxPages, HARD_CAP);
+  // Le garde-fou de découverte s'applique même si le fichier contenait une
+  // valeur plus élevée (modification manuelle…).
+  const limit = Math.min(job.maxPages, LIMITE_DECOUVERTE);
 
   let urls;
   let sitemapUsed;

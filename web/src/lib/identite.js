@@ -29,9 +29,18 @@ export const SITE = {
 };
 
 /**
- * Plafond de pages par audit, tel que le serveur le fait respecter (`HARD_CAP`).
+ * Pas de plafond de pages par audit : en local, l'utilisateur audite autant de pages qu'il
+ * veut. Ces deux valeurs ne limitent rien, elles guident seulement la sélection.
  */
-export const PLAFOND_PAGES = 8;
+
+/** Pages cochées d'office après la découverte (les premières du plan de site). */
+export const SELECTION_PAR_DEFAUT = 8;
+
+/** Au-delà de ce nombre de pages cochées, l'interface prévient que l'audit sera long. */
+export const SEUIL_AUDIT_LONG = 15;
+
+/** Durée moyenne d'une page (bureau + mobile), pour l'estimation affichée avant l'audit. */
+export const DUREE_PAGE_ESTIMEE_MS = 25_000;
 
 /**
  * Avertissement éco-index. Recopié mot pour mot depuis `ECOINDEX_DISCLAIMER` du serveur, qui

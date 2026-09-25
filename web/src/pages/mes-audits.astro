@@ -188,7 +188,7 @@ const lignes = jobs.map((job) => ({
 	}
 
 	/* Supprimer une ligne : le fichier est effacé, la ligne disparaît sans recharger. */
-	document.querySelectorAll("[data-supprimer]").forEach((bouton) => {
+	document.querySelectorAll<HTMLButtonElement>("[data-supprimer]").forEach((bouton) => {
 		bouton.addEventListener("click", async () => {
 			const confirme = window.confirm("Supprimer définitivement cet audit de votre machine ?");
 			if (!confirme) return;
@@ -212,7 +212,7 @@ const lignes = jobs.map((job) => ({
 		);
 		if (!confirme) return;
 
-		const boutons = [...document.querySelectorAll("[data-supprimer]:not([disabled])")];
+		const boutons = [...document.querySelectorAll<HTMLButtonElement>("[data-supprimer]:not([disabled])")];
 		const echecs = [];
 		for (const bouton of boutons) {
 			try {

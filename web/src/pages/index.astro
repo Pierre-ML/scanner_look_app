@@ -5,7 +5,6 @@ import BandeauEcoindex from "../components/BandeauEcoindex.astro";
 import IndicateursSysteme from "../components/IndicateursSysteme.astro";
 import Chargeur from "../components/Chargeur.astro";
 import { routes } from "../lib/api.js";
-import { PLAFOND_PAGES } from "../lib/identite.js";
 
 /**
  * `prerender = true` : explicite, bien que ce soit le défaut en `output: 'static'`. Cette page
@@ -35,7 +34,7 @@ const ETAPES = [
 	{
 		numero: "02",
 		titre: "Sélection",
-		texte: `Vous choisissez jusqu’à ${PLAFOND_PAGES} pages, et pouvez en ajouter à la main.`,
+		texte: "Vous choisissez les pages à auditer, sans limite, et pouvez en ajouter à la main.",
 	},
 	{
 		numero: "03",
@@ -87,9 +86,8 @@ const MESURES = [
 
 		{/* ============================================================ formulaire
 		 *
-		 * Un seul champ visible. Le nombre de pages n'est plus demandé : il est plafonné à
-		 * huit et le choix fin se fait à l'étape suivante, liste sous les yeux —
-		 * c'est là qu'il a du sens.
+		 * Un seul champ visible. Le nombre de pages n'est pas demandé : le choix se fait à
+		 * l'étape suivante, liste sous les yeux — c'est là qu'il a du sens.
 		 *
 		 * `novalidate` n'est PAS posé : la validation native du navigateur est le seul filet
 		 * disponible quand le JavaScript ne s'exécute pas. `type="text"` + `pattern` tolérant
@@ -104,9 +102,6 @@ const MESURES = [
 			class="apparition mx-auto mt-10 max-w-2xl"
 			style="--retard: 240ms"
 		>
-			{/* Valeur fixe, aussi envoyée par le formulaire natif sans JavaScript. */}
-			<input type="hidden" name="maxPages" value={PLAFOND_PAGES} />
-
 			<label for="url" class="sr-only">Adresse du site à auditer</label>
 			<div
 				id="champ-url"
@@ -154,7 +149,7 @@ const MESURES = [
 			<ul class="mt-6 flex flex-wrap justify-center gap-2 text-xs text-cream-muted" aria-label="Limites d’un audit">
 				<li class="flex items-center gap-1.5 rounded-full border border-obsidian-border px-3 py-1.5">
 					<Icone nom="document" taille={14} classe="text-primary" />
-					{PLAFOND_PAGES} pages maximum
+					Pages illimitées
 				</li>
 				<li class="flex items-center gap-1.5 rounded-full border border-obsidian-border px-3 py-1.5">
 					<Icone nom="chrono" taille={14} classe="text-primary" />
@@ -168,15 +163,15 @@ const MESURES = [
 
 			{/*
 			 * Sans JavaScript, l'étape de sélection n'existe pas : autant le dire ici plutôt que de
-			 * laisser l'utilisateur découvrir qu'il a lancé l'audit de tout le site.
+			 * laisser l'utilisateur le découvrir après coup.
 			 */}
 			<noscript>
 				<p class="mt-6 flex items-start gap-2 rounded-box border border-obsidian-border bg-obsidian-card p-4 text-left text-sm text-cream-muted">
 					<Icone nom="info" taille={18} classe="mt-0.5 shrink-0 text-primary" />
 					<span>
-						JavaScript est désactivé : l’audit portera sur <strong class="text-cream">les
-						{PLAFOND_PAGES} premières pages découvertes</strong>, sans étape de sélection. Vous
-						serez redirigé vers le rapport.
+						JavaScript est désactivé : les pages du site seront découvertes, mais
+						<strong class="text-cream">choisir les pages et lancer l’audit demandent
+						JavaScript</strong>.
 					</span>
 				</p>
 			</noscript>
@@ -262,16 +257,15 @@ const MESURES = [
 	 * doublerait la création de job. On affiche l'erreur et on laisse l'utilisateur réessayer.
 	 */
 	import { LIBELLE_STATUT, routes } from "../lib/api.js";
-	import { PLAFOND_PAGES } from "../lib/identite.js";
 	import { abregerCible, enregistrerAudit, lireHistorique } from "../lib/historique.js";
 
-	const formulaire = document.querySelector("#formulaire-audit");
-	const champ = document.querySelector("#url");
-	const cadreChamp = document.querySelector("#champ-url");
-	const bouton = formulaire.querySelector('button[type="submit"]');
-	const zoneErreur = document.querySelector("#erreur-formulaire");
+	const formulaire = document.querySelector<HTMLFormElement>("#formulaire-audit");
+	const champ = document.querySelector<HTMLInputElement>("#url");
+	const cadreChamp = document.querySelector<HTMLElement>("#champ-url");
+	const bouton = formulaire.querySelector<HTMLButtonElement>('button[type="submit"]');
+	const zoneErreur = document.querySelector<HTMLElement>("#erreur-formulaire");
 	const texteErreur = document.querySelector("#erreur-formulaire-texte");
-	const chargeur = document.querySelector("#chargeur-envoi");
+	const chargeur = document.querySelector<HTMLElement>("#chargeur-envoi");
 
 	/* ------------------------------------------------ pré-remplissage `?url=` */
 
@@ -282,7 +276,7 @@ const MESURES = [
 	const prerempli = new URLSearchParams(window.location.search).get("url");
 	if (prerempli) {
 		champ.value = prerempli.slice(0, 2000);
-		formulaire.querySelector('button[type="submit"]').focus();
+		bouton.focus();
 	}
 
 	/* --------------------------------------------------------------- erreurs */
@@ -325,7 +319,7 @@ const MESURES = [
 			const reponse = await fetch(routes.decouvrir(), {
 				method: "POST",
 				headers: { "Content-Type": "application/json", Accept: "application/json" },
-				body: JSON.stringify({ url, maxPages: PLAFOND_PAGES }),
+				body: JSON.stringify({ url }),
 			});
 
 			const corps = await reponse.json().catch(() => null);
@@ -402,6 +396,6 @@ const MESURES = [
 				return ligne;
 			}),
 		);
-		document.querySelector("#derniers-audits").hidden = false;
+		document.querySelector<HTMLElement>("#derniers-audits").hidden = false;
 	}
 </script>

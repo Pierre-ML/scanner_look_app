@@ -1,0 +1,74 @@
+---
+/**
+ * Carte éco-index : la note A–G dans une jauge circulaire (l'anneau suit le score sur 100),
+ * puis les mesures qui la composent et ses équivalents estimés.
+ *
+ * Couleur de la jauge : celle de la note — A et B en vert, C et D en ambre, E à G en rose —
+ * sur les mêmes couleurs de texte AA que les scores Lighthouse. La lettre est écrite au
+ * centre : la couleur ne porte jamais seule l'information.
+ *
+ * `data-eco` porte la clé de chaque valeur dans `averages.ecoindex` : le script du rapport
+ * les met à jour pendant l'audit (voir `afficherMoyennes`).
+ */
+import Icone from "./Icone.astro";
+import JaugeScore from "./JaugeScore.astro";
+
+const { eco = null } = Astro.props;
+
+/** Couleur de la note A–G. Même table que le script du rapport (`couleurNote`). */
+const couleurNote = (note) => {
+	if (note === "A" || note === "B") return "text-ok";
+	if (note === "C" || note === "D") return "text-alerte";
+	if (typeof note === "string" && /^[E-G]$/.test(note)) return "text-echec";
+	return "text-cream-dark";
+};
+
+/** Une valeur physique arrondie, suivie de son unité, ou « — ». Identique au script. */
+const mesure = (valeur, unite, decimales = 1) =>
+	typeof valeur === "number" && !Number.isNaN(valeur)
+		? `${valeur.toFixed(decimales).replace(".", ",")} ${unite}`
+		: "—";
+
+const note = /^[A-G]$/.test(String(eco?.grade)) ? eco.grade : null;
+
+const MESURES = [
+	{ cle: "score", libelle: "Score", texte: mesure(eco?.score, "/100") },
+	{ cle: "dom", libelle: "Éléments du DOM", texte: mesure(eco?.dom, "éléments", 0) },
+	{ cle: "requests", libelle: "Requêtes", texte: mesure(eco?.requests, "requêtes", 0) },
+	{ cle: "sizeKo", libelle: "Poids transféré", texte: mesure(eco?.sizeKo, "Ko") },
+	{ cle: "ghg", libelle: "GES estimés", texte: mesure(eco?.ghg, "g CO₂e", 2) },
+	{ cle: "water", libelle: "Eau estimée", texte: mesure(eco?.water, "cl", 2) },
+];
+---
+
+<section id="carte-eco" class="rounded-box border border-obsidian-border bg-obsidian-card p-5 sm:p-6">
+	<h3 class="flex items-center gap-2.5 text-base tracking-wide">
+		<Icone nom="feuille" taille={22} classe="text-primary" />
+		Éco-index
+		<span class="libelle-hud ml-1">estimation locale</span>
+	</h3>
+
+	<div class="mt-6 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-10">
+		<JaugeScore
+			libelle="Note éco-index"
+			cle="eco"
+			valeur={eco?.score ?? null}
+			texte={note ?? "—"}
+			couleur={couleurNote(note)}
+			taille="lg"
+		/>
+
+		<dl class="grid w-full flex-1 grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-3">
+			{
+				MESURES.map((ligne) => (
+					<div class="border-l border-obsidian-border pl-4">
+						<dt class="text-sm text-cream-muted">{ligne.libelle}</dt>
+						<dd data-eco={ligne.cle} class="mt-1 font-titre text-lg tabular-nums text-cream">
+							{ligne.texte}
+						</dd>
+					</div>
+				))
+			}
+		</dl>
+	</div>
+</section>

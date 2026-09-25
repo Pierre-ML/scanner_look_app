@@ -300,7 +300,7 @@ export function extractLinks(html, baseUrl) {
  * Point d'entrée de la découverte.
  *
  * @param {string} targetUrl URL saisie par l'utilisateur
- * @param {number} limit nombre max de pages (déjà plafonné par le HARD_CAP)
+ * @param {number} limit nombre max de pages proposées (garde-fou LIMITE_DECOUVERTE)
  * @param {(msg: string) => void} [log]
  * @returns {Promise<{urls: string[], sitemapUsed: boolean}>}
  */

@@ -14,7 +14,7 @@
  * Pourquoi ce canal plutôt que `define:vars` : `define:vars` interdit les imports dans le
  * script concerné, ce qui obligerait à recopier ici tout ce module.
  *
- * @returns {{jobId: string|null, etat: unknown, rapport: unknown, indisponible: string|null}}
+ * @returns {{jobId: string|null, etat: any, rapport: any, indisponible: string|null}}
  *   objet toujours défini ; ses champs valent `null` quand le serveur n'a rien pu fournir
  *   (API injoignable au moment du rendu), et le polling reprend alors la main normalement.
  */

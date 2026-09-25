@@ -91,7 +91,7 @@ const { classe = "" } = Astro.props;
 	const interieur = (source) => source.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "");
 	const icons = { sablier: interieur(sablier), coche: interieur(coche), croix: interieur(croix) };
 
-	const bouton = document.querySelector("#tester-sante");
+	const bouton = document.querySelector<HTMLButtonElement>("#tester-sante");
 	const libelleBouton = document.querySelector("#libelle-tester");
 	const libelleInitial = libelleBouton.textContent;
 
@@ -102,7 +102,7 @@ const { classe = "" } = Astro.props;
 	}
 
 	/** Applique un état visuel à une ligne (serveur ou navigateur), toujours icône + texte + couleur. */
-	function appliquerEtat(prefixe, { icone, libelle, detail, couleur }) {
+	function appliquerEtat(prefixe, { icone, libelle, detail = "", couleur }) {
 		changerIcone(`icone-${prefixe}`, icone);
 		document.getElementById(`icone-${prefixe}`).setAttribute("class", `shrink-0 ${couleur}`);
 
