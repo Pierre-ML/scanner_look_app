@@ -1,16 +1,4 @@
-/**
- * Découverte des pages à auditer.
- *
- * Stratégie, dans l'ordre :
- *   1. robots.txt -> directives `Sitemap:` (il peut y en avoir plusieurs)
- *   2. sinon /sitemap.xml puis /sitemap_index.xml
- *   3. si un sitemap est trouvé : on lui fait CONFIANCE INTÉGRALEMENT,
- *      aucun crawl n'est lancé.
- *   4. sinon : crawl BFS des liens internes (même origine), en respectant
- *      le robots.txt s'il existe.
- *
- * Toutes les étapes tolèrent l'absence de robots.txt / sitemap.
- */
+/** Découverte des pages à auditer. */
 
 import * as cheerio from 'cheerio';
 import { XMLParser } from 'fast-xml-parser';
@@ -37,12 +25,7 @@ const xmlParser = new XMLParser({
   trimValues: true,
 });
 
-/**
- * Charge et parse le robots.txt du site.
- *
- * @param {string} origin ex. "https://example.com"
- * @returns {Promise<{robots: object|null, sitemaps: string[]}>}
- */
+/** Charge et parse le robots.txt du site. */
 export async function loadRobots(origin) {
   const robotsUrl = `${origin}/robots.txt`;
   const body = await fetchText(robotsUrl);
@@ -61,10 +44,7 @@ export async function loadRobots(origin) {
   }
 }
 
-/**
- * Une URL est-elle autorisée pour notre user-agent ?
- * En l'absence de robots.txt exploitable, on autorise.
- */
+/** Une URL est-elle autorisée pour notre user-agent ? */
 function isAllowed(robots, url) {
   if (!robots) return true;
   try {
@@ -75,16 +55,8 @@ function isAllowed(robots, url) {
   }
 }
 
-/**
- * Parse un fichier sitemap (urlset ou sitemapindex) et, récursivement,
- * les sitemaps qu'il référence.
- *
- * @param {string} sitemapUrl
- * @param {number} limit nombre d'URLs encore souhaité
- * @param {{seenSitemaps: Set<string>, files: number}} state compteurs partagés
- * @param {number} depth profondeur courante
- * @returns {Promise<string[]>}
- */
+// Parse un fichier sitemap (urlset ou sitemapindex) et, récursivement, les sitemaps qu'il
+// référence.
 async function parseSitemap(sitemapUrl, limit, state, depth = 0) {
   if (limit <= 0) return [];
   if (depth > MAX_SITEMAP_DEPTH) return [];
@@ -139,14 +111,7 @@ async function parseSitemap(sitemapUrl, limit, state, depth = 0) {
   return urls;
 }
 
-/**
- * Cherche un sitemap exploitable et renvoie ses URLs.
- *
- * @param {string} origin
- * @param {string[]} declaredSitemaps sitemaps annoncés dans robots.txt
- * @param {number} limit
- * @returns {Promise<string[]>} tableau vide si aucun sitemap utilisable
- */
+/** Cherche un sitemap exploitable et renvoie ses URLs. */
 export async function discoverFromSitemap(origin, declaredSitemaps, limit) {
   const candidates = [
     ...declaredSitemaps,
@@ -169,24 +134,15 @@ export async function discoverFromSitemap(origin, declaredSitemaps, limit) {
       collected.push(url);
     }
 
-    // Dès qu'un sitemap a donné des résultats, inutile d'essayer les suivants :
-    // on lui fait confiance intégralement (cf. en-tête du fichier).
+    // Dès qu'un sitemap a donné des résultats, inutile d'essayer les suivants : on lui fait
+    // confiance intégralement (cf. en-tête du fichier).
     if (collected.length > 0) break;
   }
 
   return collected;
 }
 
-/**
- * Crawler BFS : suit les liens internes à partir de l'URL de départ.
- * Utilisé uniquement quand aucun sitemap n'a été trouvé.
- *
- * @param {string} startUrl
- * @param {number} limit nombre max de pages à retourner
- * @param {object|null} robots instance robots-parser (ou null)
- * @param {(url: string) => void} [onVisit] callback de progression
- * @returns {Promise<string[]>}
- */
+/** Crawler BFS : suit les liens internes à partir de l'URL de départ. */
 export async function crawl(startUrl, limit, robots, onVisit) {
   const start = normalizeUrl(startUrl);
   if (!start) return [];
@@ -196,9 +152,7 @@ export async function crawl(startUrl, limit, robots, onVisit) {
   const visited = new Set(); // URLs finales déjà retenues (après redirections)
   const results = [];
 
-  // Origine de référence du crawl. Elle est recalée sur l'origine réellement
-  // servie par la première page atteinte : une adresse saisie en « exemple.fr »
-  // qui redirige vers « www.exemple.fr » ne doit pas faire échouer le crawl.
+  // Origine de référence du crawl.
   let crawlOrigin = new URL(start).origin;
 
   while (queue.length > 0 && results.length < limit) {
@@ -223,9 +177,9 @@ export async function crawl(startUrl, limit, robots, onVisit) {
 
       html = await res.text();
 
-      // On retient l'URL FINALE (après redirections) : auditer l'URL d'avant
-      // redirection ferait tester une page qui n'est pas la page réelle
-      // (cas classiques : apex -> www, http -> https, ajout de slash).
+      // On retient l'URL FINALE (après redirections) : auditer l'URL d'avant redirection ferait
+      // tester une page qui n'est pas la page réelle (cas classiques : apex -> www, http -> https,
+      // ajout de slash).
       finalUrl = normalizeUrl(res.url) || url;
     } catch {
       // Page injoignable : on l'ignore et on continue le reste du crawl.
@@ -260,13 +214,7 @@ export async function crawl(startUrl, limit, robots, onVisit) {
   return results;
 }
 
-/**
- * Extrait les liens internes exploitables d'une page HTML.
- *
- * @param {string} html
- * @param {string} baseUrl
- * @returns {string[]}
- */
+/** Extrait les liens internes exploitables d'une page HTML. */
 export function extractLinks(html, baseUrl) {
   let $;
   try {
@@ -296,18 +244,9 @@ export function extractLinks(html, baseUrl) {
   return [...links];
 }
 
-/**
- * Point d'entrée de la découverte.
- *
- * @param {string} targetUrl URL saisie par l'utilisateur
- * @param {number} limit nombre max de pages proposées (garde-fou LIMITE_DECOUVERTE)
- * @param {(msg: string) => void} [log]
- * @returns {Promise<{urls: string[], sitemapUsed: boolean}>}
- */
+/** Point d'entrée de la découverte. */
 export async function discoverPages(targetUrl, limit, log = () => {}) {
-  // L'URL saisie peut rediriger (apex -> www, http -> https). On résout
-  // d'abord la destination réelle, sinon on irait chercher le robots.txt et
-  // le sitemap sur une origine qui ne sert pas le site.
+  // L'URL saisie peut rediriger (apex -> www, http -> https).
   const resolved = await resolveTargetUrl(targetUrl);
   if (resolved !== targetUrl) {
     log(`Redirection suivie : ${resolved}`);
@@ -332,20 +271,12 @@ export async function discoverPages(targetUrl, limit, log = () => {}) {
   );
 
   // Cas extrême : la page d'accueil elle-même est injoignable côté fetch.
-  // On garde quand même l'URL de départ, Lighthouse tranchera.
   const urls = crawled.length > 0 ? crawled : [normalizeUrl(resolved)];
 
   return { urls: urls.filter(Boolean), sitemapUsed: false };
 }
 
-/**
- * Suit les redirections de l'URL saisie et renvoie l'URL finale.
- * Retombe sur l'URL d'origine si le site ne répond pas : la suite de la
- * découverte saura gérer un site injoignable.
- *
- * @param {string} targetUrl
- * @returns {Promise<string>}
- */
+/** Suit les redirections de l'URL saisie et renvoie l'URL finale. */
 async function resolveTargetUrl(targetUrl) {
   const fallback = normalizeUrl(targetUrl) || targetUrl;
 
@@ -359,7 +290,7 @@ async function resolveTargetUrl(targetUrl) {
   }
 }
 
-/* ---------------------------- petits helpers ---------------------------- */
+/* petits helpers */
 
 /** fast-xml-parser renvoie un objet si un seul enfant, un tableau sinon. */
 function toArray(value) {

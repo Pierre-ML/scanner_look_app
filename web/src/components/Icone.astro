@@ -1,22 +1,5 @@
 ---
-/**
- * Une icône du jeu de `src/assets/icons/*.svg`.
- *
- * Chaque icône est un fichier SVG autonome (viewBox 0 0 24 24, `stroke="currentColor"`, sans
- * remplissage) : la couleur est décidée par la classe posée ici, ce qui permet de servir un
- * carmin décoratif à un endroit et une couleur de texte conforme ailleurs, sans dupliquer le
- * dessin. AUCUN emoji n'est employé comme icône : un emoji n'hérite pas de `currentColor`, son
- * dessin change d'une plateforme à l'autre, et il est annoncé avec un nom qu'on ne maîtrise pas.
- *
- * Les fichiers sont importés comme composants SVG d'Astro : le dessin est inliné dans le HTML
- * (pas de requête réseau), et les attributs passés ici remplacent ceux du fichier.
- *
- * Accessibilité : une icône est décorative PAR DÉFAUT (`aria-hidden`), parce que dans la
- * quasi-totalité des cas elle double un texte déjà lisible à côté d'elle. Passer `titre` la
- * rend au contraire annonçable : à réserver aux icônes qui portent seules une information.
- *
- * Ajouter une icône : déposer `nom.svg` dans `src/assets/icons/`, rien d'autre à déclarer.
- */
+/** Une icône du jeu de `src/assets/icons/*.svg`. */
 
 /** Tous les fichiers du dossier, indexés par leur nom sans extension. */
 const fichiers = import.meta.glob("../assets/icons/*.svg", { eager: true, import: "default" });
@@ -28,19 +11,17 @@ const { nom, taille = 20, classe = "", titre = null, id = null } = Astro.props;
 
 const Svg = icones[nom];
 if (!Svg) {
-	// Une faute de frappe sur un nom d'icône doit casser le build, pas produire un trou
-	// silencieux dans la page.
+	// Une faute de frappe sur un nom d'icône doit casser le build, pas produire un trou silencieux
+	// dans la page.
 	throw new Error(
 		`Icône inconnue : « ${nom} ». Noms disponibles : ${Object.keys(icones).join(", ")}.`,
 	);
 }
 ---
 
-{/*
-	`id` est un prop nommé explicitement, pas un passe-plat générique : il sert seulement quand
-	un script doit retrouver une icône précise pour changer son dessin après coup (voir
-	`IndicateursSysteme.astro`).
-*/}
+{/* `id` est un prop nommé explicitement, pas un passe-plat générique : il sert seulement quand un
+    script doit retrouver une icône précise pour changer son dessin après coup (voir
+    `IndicateursSysteme.astro`). */}
 <Svg
 	id={id ?? undefined}
 	width={taille}

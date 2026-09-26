@@ -1,24 +1,4 @@
-/**
- * Stockage des audits : en mémoire, recopié sur disque à chaque changement.
- *
- * Un fichier JSON par audit, dans `data/audits/<id>.json` (dossier ignoré par
- * git). Rien ne quitte la machine, et rien n'est supprimé automatiquement :
- * l'utilisateur garde son historique jusqu'à ce qu'il l'efface lui-même.
- *
- * Pourquoi pas SQLite : un seul process, un seul audit à la fois et quelques
- * dizaines d'audits au plus — un fichier par audit suffit, et évite une
- * dépendance native (better-sqlite3) à compiler sous Windows.
- *
- * ------------------------------------------------------------------------
- * Cycle de vie d'un job
- * ------------------------------------------------------------------------
- *   discovering   recherche des pages (sitemap ou crawl)
- *   reviewing     pages trouvées, en attente du choix de l'utilisateur
- *   running       audits Lighthouse en cours
- *   done          terminé
- *   stopped       interrompu par l'utilisateur (les pages déjà auditées restent)
- *   error         échec global
- */
+/** Stockage des audits : en mémoire, recopié sur disque à chaque changement. */
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -28,7 +8,7 @@ import { DATA_DIR } from './config.js';
 /** États depuis lesquels un job ne bougera plus tout seul. */
 export const ETATS_TERMINES = ['done', 'stopped', 'error'];
 
-/** id → job. Source de vérité pendant que le serveur tourne. */
+/** id → job. */
 const jobs = new Map();
 
 /** Prochain identifiant : entier croissant, comme l'ancien AUTOINCREMENT. */
@@ -38,17 +18,9 @@ const maintenant = () => new Date().toISOString();
 
 const cheminJob = (jobId) => path.join(DATA_DIR, `${jobId}.json`);
 
-/* ==========================================================================
- * Persistance
- * ======================================================================== */
+/* Persistance */
 
-/**
- * Écrit le job sur disque. Écriture dans un fichier temporaire puis renommage :
- * un arrêt brutal pendant l'écriture ne laisse jamais un JSON à moitié écrit.
- *
- * Sous Windows, le renommage peut échouer brièvement (EPERM / EBUSY) si un
- * antivirus ou l'indexeur tient le fichier : on réessaie quelques fois.
- */
+/** Écrit le job sur disque. */
 function enregistrer(job) {
   const cible = cheminJob(job.id);
   const temporaire = `${cible}.tmp`;
@@ -76,15 +48,7 @@ function modifier(jobId, changements) {
   return job;
 }
 
-/**
- * Charge les audits enregistrés. Appelé une fois, au démarrage du serveur.
- *
- * Un job resté dans un état actif vient d'un serveur arrêté brutalement
- * pendant le traitement (fenêtre fermée, processus tué) : il est clos, en
- * gardant les pages déjà auditées, plutôt que relancé.
- *
- * @returns {number} nombre de jobs interrompus remis en ordre
- */
+/** Charge les audits enregistrés. */
 export function chargerAudits() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -113,6 +77,7 @@ export function chargerAudits() {
             ? null
             : 'Audit interrompu : le serveur a été arrêté pendant le traitement.',
         currentUrl: null,
+        currentUrls: [],
         finishedAt: job.finishedAt || maintenant(),
       });
       enregistrer(job);
@@ -123,9 +88,7 @@ export function chargerAudits() {
   return interrompus;
 }
 
-/* ==========================================================================
- * Lectures
- * ======================================================================== */
+/* Lectures */
 
 export function getJob(jobId) {
   return jobs.get(jobId) || null;
@@ -136,13 +99,7 @@ export function listJobs() {
   return [...jobs.values()].sort((a, b) => b.id - a.id);
 }
 
-/**
- * Nombre de pages terminées en erreur.
- *
- * `processedPages` compte TOUTES les pages traitées, erreurs comprises :
- * sans ce compteur séparé, le front ne pourrait pas distinguer « 10 pages
- * auditées » de « 10 pages tentées dont 7 en échec ».
- */
+/** Nombre de pages terminées en erreur. */
 export function countErrorPages(jobId) {
   const job = jobs.get(jobId);
   return job ? job.pages.filter((p) => p.status === 'error').length : 0;
@@ -155,18 +112,9 @@ export function isCancelRequested(jobId) {
   return !job || job.cancelRequested;
 }
 
-/* ==========================================================================
- * Écritures
- * ======================================================================== */
+/* Écritures */
 
-/**
- * Crée un job. Il part en `discovering` : la recherche des pages démarre
- * aussitôt, l'utilisateur choisira ensuite lesquelles auditer.
- *
- * @param {string} targetUrl
- * @param {number} maxPages nombre max de pages à découvrir, déjà validé
- * @returns {number} identifiant du job
- */
+/** Crée un job. */
 export function createJob(targetUrl, maxPages) {
   const job = {
     id: prochainId++,
@@ -182,6 +130,7 @@ export function createJob(targetUrl, maxPages) {
     totalPages: 0,
     processedPages: 0,
     currentUrl: null,
+    currentUrls: [],
     cancelRequested: false,
     error: null,
     createdAt: maintenant(),
@@ -208,11 +157,8 @@ export function setJobDiscovered(jobId, { sitemapUsed, urls }) {
   });
 }
 
-/**
- * Fige la sélection de l'utilisateur et passe le job en `running`.
- * `false` si le job n'est plus en attente de validation (double clic…).
- */
-export function confirmJobSelection(jobId, urls) {
+/** Fige la sélection de l'utilisateur et passe le job en `running`. */
+export function confirmJobSelection(jobId, urls, reglages = {}) {
   const job = jobs.get(jobId);
   if (!job || job.status !== 'reviewing') return false;
   modifier(jobId, {
@@ -220,16 +166,15 @@ export function confirmJobSelection(jobId, urls) {
     totalPages: urls.length,
     status: 'running',
     auditStartedAt: maintenant(),
+    // Mode d'audit (voir modes.js) : combien de pages en même temps, à quelle priorité.
+    mode: reglages.mode ?? 'personnalise',
+    simultanes: reglages.simultanes ?? 1,
+    prioriteBasse: Boolean(reglages.prioriteBasse),
   });
   return true;
 }
 
-/**
- * Demande l'arrêt d'un job. Un job en attente de sélection est arrêté tout de
- * suite : aucune tâche ne tourne pour lui, personne d'autre ne le fermera.
- *
- * @returns {boolean} `false` si le job est déjà terminé
- */
+/** Demande l'arrêt d'un job. */
 export function requestCancel(jobId) {
   const job = jobs.get(jobId);
   if (!job || ETATS_TERMINES.includes(job.status)) return false;
@@ -237,22 +182,21 @@ export function requestCancel(jobId) {
   job.cancelRequested = true;
 
   if (job.status === 'reviewing') {
-    Object.assign(job, { status: 'stopped', currentUrl: null, finishedAt: maintenant() });
+    Object.assign(job, { status: 'stopped', currentUrl: null, currentUrls: [], finishedAt: maintenant() });
   }
 
   enregistrer(job);
   return true;
 }
 
-/** URL en cours d'audit, affichée en direct dans la console. */
-export function setJobCurrentUrl(jobId, url) {
-  modifier(jobId, { currentUrl: url });
+/** Pages en cours de mesure (plusieurs en mode parallèle), affichées en direct dans le rapport. */
+export function setJobPagesEnCours(jobId, urls) {
+  // `currentUrl` (la première) reste servie pour les clients qui n'en lisent qu'une.
+  modifier(jobId, { currentUrls: urls, currentUrl: urls[0] ?? null });
 }
 
-/**
- * Ajoute le résultat d'une page et incrémente le compteur du job dans la même
- * écriture, pour que l'UI ne voie jamais un état incohérent.
- */
+// Ajoute le résultat d'une page et incrémente le compteur du job dans la même écriture, pour que
+// l'UI ne voie jamais un état incohérent.
 export function savePageResult(jobId, page) {
   const job = jobs.get(jobId);
   if (!job) return;
@@ -262,6 +206,9 @@ export function savePageResult(jobId, page) {
     status: page.status,
     desktopScores: page.desktopScores || null,
     mobileScores: page.mobileScores || null,
+    // Points en échec relevés par Lighthouse, texte d'origine (voir extractRecommandations).
+    desktopRecommandations: page.desktopRecommandations || null,
+    mobileRecommandations: page.mobileRecommandations || null,
     ecoindex: page.ecoindex || null,
     error: page.error || null,
     // Durée du traitement de la page : alimente l'estimation du temps restant
@@ -273,12 +220,12 @@ export function savePageResult(jobId, page) {
 }
 
 export function finishJob(jobId) {
-  modifier(jobId, { status: 'done', currentUrl: null, finishedAt: maintenant() });
+  modifier(jobId, { status: 'done', currentUrl: null, currentUrls: [], finishedAt: maintenant() });
 }
 
 /** Arrêt demandé par l'utilisateur : les pages déjà auditées sont conservées. */
 export function stopJob(jobId) {
-  modifier(jobId, { status: 'stopped', currentUrl: null, finishedAt: maintenant() });
+  modifier(jobId, { status: 'stopped', currentUrl: null, currentUrls: [], finishedAt: maintenant() });
 }
 
 export function failJob(jobId, message) {
@@ -286,19 +233,12 @@ export function failJob(jobId, message) {
     status: 'error',
     error: String(message).slice(0, 1000),
     currentUrl: null,
+    currentUrls: [],
     finishedAt: maintenant(),
   });
 }
 
-/**
- * Supprime un audit à la demande de l'utilisateur.
- *
- * Un audit en cours de production de données (`discovering`, `running`) n'est
- * JAMAIS supprimé : la tâche écrirait juste après dans un job disparu.
- * L'appelant doit d'abord demander l'arrêt, puis supprimer.
- *
- * @returns {{ok: true} | {ok: false, raison: 'introuvable'|'en_cours', status?: string}}
- */
+/** Supprime un audit à la demande de l'utilisateur. */
 export function deleteJob(jobId) {
   const job = jobs.get(jobId);
   if (!job) return { ok: false, raison: 'introuvable' };

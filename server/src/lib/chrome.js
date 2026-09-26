@@ -1,14 +1,4 @@
-/**
- * Détection du navigateur utilisé pour les audits.
- *
- * Aucun Chromium n'est téléchargé ni embarqué : l'outil audite avec le Chrome
- * déjà installé sur la machine de l'utilisateur (Windows). Ordre de recherche :
- *
- *   1. CHROME_PATH, s'il est défini (chemin forcé par l'utilisateur) ;
- *   2. Chrome, installation machine : %ProgramFiles%, puis %ProgramFiles(x86)% ;
- *   3. Chrome, installation utilisateur : %LOCALAPPDATA% ;
- *   4. repli sur Microsoft Edge (même moteur Chromium, présent sur tout Windows récent).
- */
+/** Détection du navigateur utilisé pour les audits. */
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,8 +6,7 @@ import path from 'node:path';
 /** Message affiché quand aucun navigateur n'est trouvé : au démarrage ET dans l'interface. */
 export const MESSAGE_NAVIGATEUR_INTROUVABLE =
   'Aucun navigateur trouvé : installez Google Chrome (https://www.google.com/chrome/) ' +
-  'ou indiquez le chemin complet de chrome.exe dans la variable CHROME_PATH ' +
-  '(fichier .env à la racine du dépôt), puis relancez « npm run dev ».';
+  'ou indiquez le chemin de chrome.exe dans la variable CHROME_PATH, puis relancez « npm run dev ».';
 
 /** Emplacements candidats, dans l'ordre de préférence. */
 function candidats() {
@@ -43,12 +32,7 @@ function nommer(chemin) {
   return /msedge\.exe$/i.test(chemin) ? 'Microsoft Edge' : 'Google Chrome';
 }
 
-/**
- * Cherche le navigateur. Ne throw jamais.
- *
- * @returns {{trouve: true, nom: string, chemin: string, source: 'CHROME_PATH'|'auto'}
- *          | {trouve: false, erreur: string}}
- */
+/** Cherche le navigateur. */
 export function trouverNavigateur() {
   const force = process.env.CHROME_PATH?.trim().replace(/^"(.*)"$/, '$1');
 

@@ -1,10 +1,4 @@
-/**
- * Sortie du journal Fastify, lisible dans un terminal.
- *
- * Fastify (pino) écrit une ligne JSON par événement : parfait pour un serveur surveillé,
- * illisible pour quelqu'un qui lance l'outil sur son poste. Ce flux la reformate en
- * « 10:42:07 INFO  message (détails) », sans dépendance supplémentaire.
- */
+/** Sortie du journal Fastify, lisible dans un terminal. */
 
 const NIVEAUX = { 10: 'TRACE', 20: 'DEBUG', 30: 'INFO ', 40: 'AVERT', 50: 'ERREUR', 60: 'FATAL' };
 

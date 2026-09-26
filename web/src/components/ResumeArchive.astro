@@ -1,14 +1,5 @@
 ---
-/**
- * Résumé d'un audit tel que ce navigateur l'a gardé dans le cookie `eco_audits`.
- *
- * Affiché quand l'audit a été supprimé du dossier `data/` mais que ce navigateur en avait
- * conservé le résumé : le rapport détaillé n'existe plus, les moyennes restent lisibles. Rendu
- * côté serveur à partir du cookie reçu avec la requête, donc visible sans JavaScript.
- *
- * Le cookie est une donnée venue du client : tout ce qui en sort est affiché comme TEXTE
- * (échappé par Astro), jamais comme HTML, et les nombres sont revérifiés un par un.
- */
+/** Résumé d'un audit tel que ce navigateur l'a gardé dans le cookie `eco_audits`. */
 import Icone from "./Icone.astro";
 
 const { entree, titreNiveau = "h2" } = Astro.props;
@@ -44,11 +35,11 @@ const aDesScores = groupes.length > 0 || ecoScore !== null;
 ---
 
 <section class="rounded-box border border-obsidian-border bg-obsidian-card p-6">
-	<p class="libelle-hud flex items-center gap-2">
+	<p class="font-corps text-micro tracking-hud uppercase text-cream-dark flex items-center gap-2">
 		<Icone nom="document" taille={16} classe="text-primary" />
 		Résumé conservé dans votre navigateur
 	</p>
-	<Titre class="mt-2 font-titre text-2xl tracking-wide break-all">{entree.u || `Audit n° ${entree.i}`}</Titre>
+	<Titre class="font-titre tracking-[0.02em] mt-2 text-2xl break-all">{entree.u || `Audit n° ${entree.i}`}</Titre>
 	<p class="mt-1 text-sm text-cream-muted">
 		Audit du {dateAudit}
 		{nombre(entree.n) !== null && ` · ${entree.n} page${entree.n > 1 ? "s" : ""} mesurée${entree.n > 1 ? "s" : ""}`}
@@ -70,7 +61,7 @@ const aDesScores = groupes.length > 0 || ecoScore !== null;
 								return (
 									<div class="flex items-baseline justify-between gap-3 text-sm">
 										<dt class="text-cream-muted">{libelle}</dt>
-										<dd class:list={["chiffres font-titre text-lg", classeScore(valeur)]}>
+										<dd class:list={["tabular-nums font-titre text-lg", classeScore(valeur)]}>
 											{valeur ?? "—"}
 											<span class="text-xs text-cream-dark"> /100</span>
 										</dd>
@@ -91,7 +82,7 @@ const aDesScores = groupes.length > 0 || ecoScore !== null;
 						</span>
 						<p>
 							<span class="sr-only">Note éco-index : {ecoNote ?? "non calculée"}. </span>
-							<span class:list={["chiffres font-titre text-2xl", classeScore(ecoScore)]}>{ecoScore ?? "—"}</span>
+							<span class:list={["tabular-nums font-titre text-2xl", classeScore(ecoScore)]}>{ecoScore ?? "—"}</span>
 							<span class="text-xs text-cream-dark"> /100</span>
 							<span class="block text-xs text-cream-dark">estimation locale</span>
 						</p>

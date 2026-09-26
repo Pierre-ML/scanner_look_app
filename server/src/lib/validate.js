@@ -1,21 +1,8 @@
-/**
- * Validation des entrées du formulaire / de l'API.
- */
+/** Validation des entrées du formulaire / de l'API. */
 
 import { LIMITE_DECOUVERTE } from './config.js';
 
-/**
- * Valide et normalise une URL de site.
- *
- * Règles :
- *   - protocole http/https uniquement (pas de file:, javascript:, ftp:…) ;
- *   - le schéma est ajouté automatiquement si l'utilisateur l'a omis
- *     (« exemple.fr » devient « https://exemple.fr ») ;
- *   - un hôte est obligatoire.
- *
- * @param {unknown} raw
- * @returns {{ok: true, url: string} | {ok: false, error: string}}
- */
+/** Valide et normalise une URL de site. */
 export function validateUrl(raw) {
   if (typeof raw !== 'string' || raw.trim() === '') {
     return { ok: false, error: 'URL manquante.' };
@@ -49,13 +36,7 @@ export function validateUrl(raw) {
   return { ok: true, url: url.toString() };
 }
 
-/**
- * Valide le nombre de pages à découvrir. Absent ou aberrant : la limite de
- * découverte complète. Jamais au-delà de cette limite (garde-fou du crawl).
- *
- * @param {unknown} raw
- * @returns {number} entier dans [1, LIMITE_DECOUVERTE]
- */
+/** Valide le nombre de pages à découvrir. */
 export function validateMaxPages(raw) {
   const parsed = Number.parseInt(raw, 10);
 

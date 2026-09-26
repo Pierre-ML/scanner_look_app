@@ -1,11 +1,5 @@
 ---
-/**
- * Gabarit unique du site.
- *
- * Porte les trois éléments qu'aucune page ne doit pouvoir oublier : le lien d'évitement,
- * le repère `#contenu` sur lequel il pointe, et le pied de page construit depuis
- * `identite.js`.
- */
+/** Gabarit unique du site. */
 import "../styles/global.css";
 import { DEPOT, SITE, EDITEUR } from "../lib/identite.js";
 import Icone from "../components/Icone.astro";
@@ -14,12 +8,8 @@ import Logo from "../components/Logo.astro";
 const {
 	titre,
 	description = SITE.description,
-	/**
-	 * Les pages de job (`/rapport`, `/decouverte`) affichent un état qui change en continu :
-	 * les remettre en cache servirait un avancement périmé, ou un rapport vide là où
-	 * l'audit est terminé. L'API répond déjà `cache-control: no-store` sur ses routes, mais
-	 * cela ne couvre pas le document HTML lui-même.
-	 */
+	// Les pages de job (`/rapport`, `/decouverte`) affichent un état qui change en continu : les
+	// remettre en cache servirait un avancement périmé, ou un rapport vide là où l'audit est terminé.
 	sansCache = false,
 	/** Largeur de page élargie (rapport, tableau de huit colonnes de scores). */
 	large = false,
@@ -34,7 +24,7 @@ const titreComplet = titre ? `${titre} — ${SITE.nom}` : SITE.titre;
 ---
 
 <!doctype html>
-<html lang="fr" data-theme="obsidian">
+<html lang="fr" data-theme="obsidian" class="scroll-smooth motion-reduce:scroll-auto">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -43,13 +33,9 @@ const titreComplet = titre ? `${titre} — ${SITE.nom}` : SITE.titre;
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
 		{
-			/*
-			 * Sur un site statique, il n'y a pas de serveur Astro pour poser un en-tête :
-			 * l'équivalent est cette balise, doublée par la consigne de configuration du
-			 * serveur statique documentée dans le README (`Cache-Control: no-store` sur
-			 * /rapport/* et /decouverte/*). La balise couvre le cache du navigateur, l'en-tête
-			 * couvre les caches intermédiaires.
-			 */
+			/* Sur un site statique, il n'y a pas de serveur Astro pour poser un en-tête : l'équivalent est
+			   cette balise, doublée par la consigne de configuration du serveur statique documentée dans le
+			   README (`Cache-Control: no-store` sur /rapport/* et /decouverte/*). */
 			sansCache && (
 				<>
 					<meta http-equiv="cache-control" content="no-store, no-cache, must-revalidate" />
@@ -64,18 +50,27 @@ const titreComplet = titre ? `${titre} — ${SITE.nom}` : SITE.titre;
 		<link rel="preload" href="/fonts/surgena.ttf" as="font" type="font/ttf" crossorigin />
 	</head>
 
-	<body class="fond-hud flex min-h-dvh flex-col bg-base-100 text-base-content antialiased">
-		{/*
-		 * Lien d'évitement : premier élément focusable du document, avant toute navigation.
-		 * Sa position hors écran et son retour au focus sont dans `global.css`.
-		 */}
-		<a href="#contenu" class="lien-evitement btn btn-secondary btn-sm">Aller au contenu</a>
+	{/* Réglages valables pour toute l'interface, posés une fois ici : */}
+	<body
+		class="relative isolate flex min-h-dvh flex-col bg-obsidian font-corps text-cream antialiased **:focus-visible:rounded-[0.25rem] **:focus-visible:outline-2 **:focus-visible:outline-offset-2 **:focus-visible:outline-cream motion-reduce:**:animate-none! motion-reduce:**:transition-none! motion-reduce:**:after:animate-none!"
+	>
+		{/* Fond du site : grille de points du HUD, estompée vers le bas, et une lueur carmin très basse
+		    en haut de page. */}
+		<div
+			aria-hidden="true"
+			class="pointer-events-none fixed inset-0 -z-1 [background-image:radial-gradient(60%_45%_at_50%_-8%,rgb(122_12_13/0.22),transparent_70%),radial-gradient(rgb(247_242_232/0.06)_1px,transparent_1px)] [background-size:100%_100%,24px_24px] [mask-image:linear-gradient(to_bottom,black_0%,black_55%,transparent_100%)]"
+		></div>
 
-		{/*
-		 * En-tête collant, sur un voile flouté : la navigation reste à portée pendant la lecture
-		 * d'un long rapport, sans masquer le texte qui défile dessous.
-		 */}
-		<header class="sticky top-0 z-40 border-b filet bg-obsidian/80 backdrop-blur-md">
+		{/* Lien d'évitement : premier élément focusable du document, avant toute navigation. */}
+		<a
+			href="#contenu"
+			class="btn btn-secondary btn-sm fixed top-2 left-2 z-100 -translate-y-[200%] transition-[translate] duration-150 ease-douce focus-visible:translate-y-0"
+			>Aller au contenu</a
+		>
+
+		{/* En-tête collant, sur un voile flouté : la navigation reste à portée pendant la lecture d'un
+		    long rapport, sans masquer le texte qui défile dessous. */}
+		<header class="sticky top-0 z-40 border-b border-obsidian-border bg-obsidian/80 backdrop-blur-md">
 			<div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
 				<a href="/" class="group flex items-center gap-3" aria-label={`${SITE.nom} — accueil`}>
 					<Logo mode={logoAnime ? "entree" : "fixe"} classe="h-7 w-auto text-cream transition-colors duration-200 group-hover:text-cream-muted" />
@@ -105,7 +100,7 @@ const titreComplet = titre ? `${titre} — ${SITE.nom}` : SITE.titre;
 								<Icone nom="document" taille={16} classe="text-primary" />
 								Mes audits
 								{/* Rempli par le script ci-dessous : le nombre vient du serveur local. */}
-								<span data-compteur-audits hidden class="badge badge-sm border-obsidian-border bg-obsidian-hover text-cream chiffres"></span>
+								<span data-compteur-audits hidden class="badge badge-sm border-obsidian-border bg-obsidian-hover text-cream tabular-nums"></span>
 							</a>
 						</li>
 					</ul>
@@ -118,7 +113,7 @@ const titreComplet = titre ? `${titre} — ${SITE.nom}` : SITE.titre;
 			<slot />
 		</main>
 
-		<footer class="mt-16 border-t filet">
+		<footer class="mt-16 border-t border-obsidian-border">
 			<div
 				class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-cream-dark sm:flex-row sm:items-center sm:justify-between sm:px-6"
 			>
@@ -142,11 +137,7 @@ const titreComplet = titre ? `${titre} — ${SITE.nom}` : SITE.titre;
 		</footer>
 
 		<script>
-			/*
-			 * Pastille « Mes audits » : le nombre d'audits enregistrés par le serveur local.
-			 * Lu ici plutôt qu'au rendu, parce que la plupart des pages sont pré-générées. Un
-			 * serveur injoignable laisse simplement la pastille masquée.
-			 */
+			/* Pastille « Mes audits » : le nombre d'audits enregistrés par le serveur local. */
 			import { routes } from "../lib/api.js";
 
 			const pastille = document.querySelector<HTMLElement>("[data-compteur-audits]");

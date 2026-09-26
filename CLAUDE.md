@@ -21,9 +21,22 @@ dans `web/astro.config.mjs`).
 
 ## Règles
 
+- Styles : **uniquement Tailwind** (utilitaires et composants daisyUI) dans le balisage. Aucune
+  classe CSS maison, aucun bloc `<style>`, aucun `style="…"` sauf une valeur dynamique exigée
+  par un composant (ex. `--value` de `radial-progress`). `web/src/styles/global.css` ne contient
+  que la configuration Tailwind : `@import`, `@plugin` daisyUI, `@theme` (jetons, animations et
+  leurs `@keyframes`) et `@font-face`. Un retard d'animation se pose avec `[--retard:…]`.
 - Ne pas mettre à jour les dépendances (`@latest`) sans demande explicite.
 - Code et commentaires en français, dans le style existant.
-- Un seul audit à la fois ; ne pas réintroduire de worker séparé, de file de jobs ni de CORS.
+- Commentaires : l'essentiel seulement, une ligne en général, trois au maximum.
+- Outil 100 % local : aucun `.env` ni fichier d'exemple ; valeurs fixes dans le code
+  (seule exception : `CHROME_PATH`, pour un Chrome installé à un endroit inhabituel).
+- Un seul audit à la fois ; ne pas réintroduire de worker permanent, de file de jobs ni de CORS.
+  Les pages d'UN audit peuvent être mesurées en parallèle par une équipe de processus
+  (`server/src/lib/processus-audit.js`, lancée et arrêtée par `taches.js`) : c'est le seul
+  multi-processus autorisé, et chaque processus doit fermer son Chrome.
+- Après une modification du serveur, relancer `npm run dev` : Node ne recharge pas le code
+  (l'accueil affiche « À relancer » tant que ce n'est pas fait).
 - Tester un changement du serveur avec un audit réel, puis vérifier qu'aucun Chrome ne reste :
   `Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | ? CommandLine -like '*puppeteer_dev_chrome_profile*'`
 

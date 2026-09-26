@@ -1,24 +1,12 @@
-/**
- * Utilitaires réseau pour la phase de découverte (robots.txt, sitemap, crawl).
- *
- * Règle d'or : AUCUN fetch sans timeout. Un site lent ou un serveur qui ne
- * ferme jamais la connexion ne doit pas bloquer l'audit indéfiniment.
- */
+/** Utilitaires réseau pour la phase de découverte (robots.txt, sitemap, crawl). */
 
 /** Timeout par défaut d'une requête de découverte (ms). */
-export const FETCH_TIMEOUT_MS = Number(process.env.ECO_AUDIT_FETCH_TIMEOUT || 15000);
+export const FETCH_TIMEOUT_MS = 15_000;
 
 /** User-Agent annoncé : identifiable, pour que les admins sachent qui crawle. */
 export const USER_AGENT = 'eco-audit/1.0 (+https://github.com/Pierre-ML/scanner_look_app; audit eco-conception)';
 
-/**
- * `fetch` avec timeout dur via AbortController.
- * Ne throw jamais de timeout silencieux : l'erreur est explicite.
- *
- * @param {string} url
- * @param {{timeout?: number, headers?: Record<string,string>, redirect?: string}} [options]
- * @returns {Promise<Response>}
- */
+/** `fetch` avec timeout dur via AbortController. */
 export async function fetchWithTimeout(url, options = {}) {
   const { timeout = FETCH_TIMEOUT_MS, ...rest } = options;
   const controller = new AbortController();
@@ -41,15 +29,7 @@ export async function fetchWithTimeout(url, options = {}) {
   }
 }
 
-/**
- * Récupère un corps de réponse texte. Renvoie `null` au lieu de throw quand
- * la ressource est absente, en erreur ou trop lourde : la découverte doit
- * tolérer l'absence de robots.txt / sitemap sans planter.
- *
- * @param {string} url
- * @param {{timeout?: number, maxBytes?: number}} [options]
- * @returns {Promise<string|null>}
- */
+/** Récupère un corps de réponse texte. */
 export async function fetchText(url, options = {}) {
   const { maxBytes = 10 * 1024 * 1024, ...rest } = options;
 
@@ -68,16 +48,9 @@ export async function fetchText(url, options = {}) {
   }
 }
 
-/**
- * Normalise une URL pour la déduplication du crawl :
- * - supprime le fragment (#ancre) qui ne change pas la page,
- * - supprime le slash final (sauf racine),
- * - trie les paramètres de query pour que ?a=1&b=2 == ?b=2&a=1.
- *
- * @param {string} rawUrl
- * @param {string} [base] URL de base pour résoudre un lien relatif
- * @returns {string|null} URL absolue normalisée, ou null si non exploitable
- */
+// Normalise une URL pour la déduplication du crawl : - supprime le fragment (#ancre) qui ne change
+// pas la page, - supprime le slash final (sauf racine), - trie les paramètres de query pour que
+// ?a=1&b=2 == ?b=2&a=1.
 export function normalizeUrl(rawUrl, base) {
   try {
     const u = new URL(rawUrl, base);
@@ -95,10 +68,7 @@ export function normalizeUrl(rawUrl, base) {
   }
 }
 
-/**
- * Deux URLs appartiennent-elles à la même origine (protocole + host + port) ?
- * Utilisé pour garder le crawl à l'intérieur du site audité.
- */
+/** Deux URLs appartiennent-elles à la même origine (protocole + host + port) ? */
 export function isSameOrigin(urlA, urlB) {
   try {
     return new URL(urlA).origin === new URL(urlB).origin;
@@ -107,10 +77,7 @@ export function isSameOrigin(urlA, urlB) {
   }
 }
 
-/**
- * Filtre les URLs qui ne sont manifestement pas des pages HTML, d'après leur
- * extension. Évite de lancer Lighthouse sur un PDF ou une image.
- */
+/** Filtre les URLs qui ne sont manifestement pas des pages HTML, d'après leur extension. */
 const NON_HTML_EXT =
   /\.(?:jpg|jpeg|png|gif|webp|avif|svg|ico|bmp|tiff?|pdf|zip|rar|7z|gz|tgz|bz2|mp3|mp4|avi|mov|wmv|flv|webm|ogg|wav|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odp|csv|json|xml|rss|atom|txt|css|js|mjs|map|woff2?|ttf|otf|eot|exe|dmg|apk|iso)$/i;
 

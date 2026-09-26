@@ -1,20 +1,7 @@
 ---
-/**
- * Écran d'attente animé, dans l'esprit du chargeur du portfolio : monogramme PML qui se
- * dessine en boucle, balayage de radar, graduations du HUD, barre indéterminée, phase en
- * cours et temps écoulé.
- *
- * Utilisé pour les attentes SANS estimation de durée — la découverte des pages. Pour l'audit,
- * dont l'API estime la durée, la page de rapport affiche un compte à rebours à la place : une
- * attente dont on connaît la fin doit être annoncée comme telle.
- *
- * `plein` : superposé à toute la page (envoi du formulaire d'accueil), sinon intégré au flux.
- * Le composant est rendu `hidden` ; c'est au script de la page de le montrer. Le petit script
- * ci-dessous ne fait qu'animer ce qui est visible : rotation des phases et chronomètre.
- *
- * Accessibilité : `role="status"` + `aria-live="polite"` sur la phrase de phase seulement —
- * le chronomètre, qui change chaque seconde, n'est pas annoncé (ce serait du bruit continu).
- */
+// Écran d'attente animé, dans l'esprit du chargeur du portfolio : monogramme PML qui se dessine en
+// boucle, balayage de radar, graduations du HUD, barre indéterminée, phase en cours et temps
+// écoulé.
 import Logo from "./Logo.astro";
 
 const {
@@ -29,6 +16,18 @@ const {
 	plein = false,
 	classe = "",
 } = Astro.props;
+
+/** Graduations du HUD : elles s'allument l'une après l'autre, 110 ms d'écart. */
+const RETARDS_GRADUATIONS = [
+	"[--retard:0ms]",
+	"[--retard:110ms]",
+	"[--retard:220ms]",
+	"[--retard:330ms]",
+	"[--retard:440ms]",
+	"[--retard:550ms]",
+	"[--retard:660ms]",
+	"[--retard:770ms]",
+];
 ---
 
 <div
@@ -43,20 +42,20 @@ const {
 		classe,
 	]}
 >
-	<span class="repere-hud pointer-events-none absolute top-4 left-4">[ + ]</span>
-	<span class="repere-hud pointer-events-none absolute right-4 bottom-4">[ + ]</span>
+	<span class="font-mono text-micro tracking-[-0.02em] text-cream-muted/25 select-none pointer-events-none absolute top-4 left-4">[ + ]</span>
+	<span class="font-mono text-micro tracking-[-0.02em] text-cream-muted/25 select-none pointer-events-none absolute right-4 bottom-4">[ + ]</span>
 
 	<div class:list={["flex w-full max-w-md flex-col items-center px-6 text-center", plein ? "py-10" : "mx-auto py-12"]}>
-		{/* Radar + logo. Le cône tourne derrière le monogramme. */}
+		{/* Radar + logo. */}
 		<div class="relative grid size-44 place-items-center" aria-hidden="true">
-			<span class="radar-anneau absolute inset-0"></span>
-			<span class="radar-anneau absolute inset-6"></span>
-			<span class="radar-anneau absolute inset-12"></span>
-			<span class="radar-balayage absolute inset-0"></span>
+			<span class="rounded-full border border-cream/8 absolute inset-0"></span>
+			<span class="rounded-full border border-cream/8 absolute inset-6"></span>
+			<span class="rounded-full border border-cream/8 absolute inset-12"></span>
+			<span class="rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,rgb(158_16_18/0.35)_50deg,transparent_52deg)] animate-[spin_2.4s_linear_infinite] absolute inset-0"></span>
 			<Logo mode="boucle" classe="relative w-28 text-cream" />
 		</div>
 
-		<p class="libelle-hud mt-8">{titre}</p>
+		<p class="font-corps text-micro tracking-hud uppercase text-cream-dark mt-8">{titre}</p>
 
 		<p role="status" aria-live="polite" class="mt-2 min-h-7 font-titre text-lg tracking-wide text-cream">
 			<span data-chargeur-phase>{phases[0]}</span><span aria-hidden="true" class="text-cream-dark">…</span>
@@ -64,15 +63,17 @@ const {
 
 		<div class="mt-6 flex w-full items-end justify-between gap-4">
 			<div class="flex items-center gap-1.5" aria-hidden="true">
-				{Array.from({ length: 8 }, (_, rang) => <span class="graduation" style={`--rang:${rang}`}></span>)}
+				{RETARDS_GRADUATIONS.map((retard) => (
+					<span class:list={["block h-1.5 w-4 rounded-[2px] bg-obsidian-border animate-graduation", retard]}></span>
+				))}
 			</div>
 			<p class="text-right">
-				<span class="libelle-hud block">Écoulé</span>
-				<span data-chargeur-ecoule class="chiffres font-titre text-2xl leading-none text-cream">00:00</span>
+				<span class="font-corps text-micro tracking-hud uppercase text-cream-dark block">Écoulé</span>
+				<span data-chargeur-ecoule class="tabular-nums font-titre text-2xl leading-none text-cream">00:00</span>
 			</p>
 		</div>
 
-		<div class="barre-indeterminee mt-3 w-full" aria-hidden="true"></div>
+		<div class="relative h-1.5 overflow-hidden rounded-full border border-obsidian-border/70 bg-obsidian-card after:absolute after:inset-0 after:w-2/5 after:rounded-[inherit] after:bg-[linear-gradient(90deg,transparent,var(--color-crimson-hover),var(--color-cream))] after:animate-traversee mt-3 w-full" aria-hidden="true"></div>
 
 		<p class="mt-5 text-sm text-cream-muted">
 			<slot>Cela prend en général quelques secondes.</slot>
@@ -81,14 +82,9 @@ const {
 </div>
 
 <script>
-	/**
-	 * Anime chaque chargeur visible : phase suivante toutes les 2,4 s (sans boucler — la
-	 * dernière phase reste affichée, revenir à « Connexion au site » laisserait croire à un
-	 * redémarrage), et temps écoulé depuis son apparition.
-	 *
-	 * Un `MutationObserver` sur l'attribut `hidden` détecte l'apparition : les pages n'ont
-	 * qu'à lever `hidden`, sans connaître ce script.
-	 */
+	// Anime chaque chargeur visible : phase suivante toutes les 2,4 s (sans boucler — la dernière
+	// phase reste affichée, revenir à « Connexion au site » laisserait croire à un redémarrage), et
+	// temps écoulé depuis son apparition.
 	for (const chargeur of document.querySelectorAll<HTMLElement>("[data-chargeur]")) {
 		const phases = JSON.parse(chargeur.dataset.phases || "[]");
 		const zonePhase = chargeur.querySelector("[data-chargeur-phase]");

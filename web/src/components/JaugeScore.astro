@@ -1,20 +1,6 @@
 ---
-/**
- * Jauge circulaire d'un score, à la manière de Lighthouse : un anneau qui se remplit de 0 à
- * 100, un disque teinté, le chiffre au centre et le libellé dessous.
- *
- * Construite sur `radial-progress` de daisyUI : l'arc (bouts arrondis, animé) prend la
- * couleur du texte (`currentColor`) ; `bg-current/10` teinte le disque de la même couleur,
- * très atténuée — c'est le principe visuel de Lighthouse.
- *
- * Mêmes seuils que Lighthouse (90 / 50) et mêmes couleurs de TEXTE que le reste du rapport,
- * toutes au-delà de 4.5:1 sur l'obsidian. La couleur n'est jamais seule à porter
- * l'information : le chiffre est écrit au centre, et `aria-valuetext` le dit en toutes
- * lettres.
- *
- * `data-jauge` porte la clé du score dans `averages` : le script du rapport met la jauge à
- * jour à chaque tour de suivi, sans la recréer (voir `majJauge`).
- */
+// Jauge circulaire d'un score, à la manière de Lighthouse : un anneau qui se remplit de 0 à 100,
+// un disque teinté, le chiffre au centre et le libellé dessous.
 
 const {
 	/** Libellé affiché sous le cercle. */

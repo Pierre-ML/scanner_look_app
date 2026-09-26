@@ -1,13 +1,6 @@
 ---
-/**
- * Carte de moyennes bureau ou mobile : les quatre catégories Lighthouse en jauges
- * circulaires, comme en tête d'un rapport Lighthouse.
- *
- * Les valeurs arrivent telles que l'API les calcule dans `averages.desktop` ou
- * `averages.mobile` : un nombre sur 100, ou `null` quand aucune page n'a fourni la métrique.
- * Rendue côté serveur avec les moyennes déjà connues, puis tenue à jour par le script du
- * rapport pendant l'audit.
- */
+// Carte de moyennes bureau ou mobile : les quatre catégories Lighthouse en jauges circulaires,
+// comme en tête d'un rapport Lighthouse.
 import Icone from "./Icone.astro";
 import JaugeScore from "./JaugeScore.astro";
 
@@ -22,7 +15,7 @@ const CATEGORIES = [
 ---
 
 <section class="rounded-box border border-obsidian-border bg-obsidian-card p-5 sm:p-6">
-	<h3 class="flex items-center gap-2.5 text-base tracking-wide">
+	<h3 class="font-titre tracking-[0.02em] flex items-center gap-2.5 text-base">
 		<Icone nom={icone} taille={22} classe="text-primary" />
 		{titre}
 	</h3>

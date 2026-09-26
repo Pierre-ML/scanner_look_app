@@ -1,0 +1,63 @@
+---
+// Choix du mode d'audit ; logique dans src/scripts/mode-audit.js.
+const MODES = [
+	{
+		cle: "econome",
+		titre: "Arrière-plan",
+		texte: "Une page à la fois, Chrome en priorité basse : votre PC reste fluide. Le plus long.",
+	},
+	{
+		cle: "personnalise",
+		titre: "Personnalisé",
+		texte: "Vous choisissez combien de pages en même temps. À 1 : la mesure la plus fiable.",
+	},
+	{
+		cle: "rapide",
+		titre: "Rapide",
+		texte: "Autant de pages en même temps que votre machine le permet. Le plus court.",
+	},
+];
+---
+
+<fieldset id="choix-mode" class="rounded-box border border-obsidian-border bg-obsidian-card p-5">
+	<legend class="px-2 font-corps text-micro tracking-hud uppercase text-cream-dark">Mode d’audit</legend>
+
+	<div class="grid gap-3 md:grid-cols-3">
+		{
+			MODES.map((mode) => (
+				<label class="flex cursor-pointer items-start gap-3 rounded-box border border-obsidian-border p-4 transition-colors duration-200 hover:border-cream-dark/40 has-checked:border-cream-dark has-checked:bg-obsidian-hover">
+					<input
+						type="radio"
+						name="mode-audit"
+						value={mode.cle}
+						checked={mode.cle === "personnalise"}
+						class="radio radio-primary radio-sm mt-0.5 shrink-0"
+					/>
+					<span>
+						<span class="block font-titre tracking-[0.02em] text-cream">{mode.titre}</span>
+						<span class="mt-1 block text-sm leading-relaxed text-cream-muted">{mode.texte}</span>
+					</span>
+				</label>
+			))
+		}
+	</div>
+
+	<div id="reglage-simultanes" class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+		<label for="simultanes" class="text-sm text-cream-muted">
+			Pages en même temps : <output id="valeur-simultanes" for="simultanes" class="font-titre text-cream tabular-nums">1</output>
+		</label>
+		<input id="simultanes" type="range" min="1" max="6" value="1" step="1" class="range range-primary range-sm max-w-xs flex-1" />
+	</div>
+
+	<p id="capacite-machine" class="mt-3 text-xs leading-relaxed text-cream-dark"></p>
+
+	<p id="avertissement-surcharge" hidden class="mt-2 text-sm text-alerte">
+		Au-delà du nombre recommandé, la mémoire risque de manquer : votre machine peut ralentir, et
+		des pages peuvent échouer.
+	</p>
+
+	<p id="avertissement-parallele" hidden class="mt-2 text-sm text-alerte">
+		Plusieurs pages en même temps : les scores de performance seront moins fiables (le processeur
+		est partagé). L’accessibilité, les bonnes pratiques et le référencement ne changent pas.
+	</p>
+</fieldset>

@@ -59,6 +59,51 @@ pages déjà mesurées sont gardées) et Chrome est fermé. Si Windows demande
    25 secondes par page. Les résultats s'affichent au fur et à mesure. Le bouton
    **Arrêter le scan** interrompt l'audit immédiatement, en gardant les pages terminées.
 
+### Ce qu'il faut corriger
+
+Sous les moyennes, la section **À corriger** liste ce que Lighthouse signale sur les pages
+auditées, par catégorie (performance, accessibilité, bonnes pratiques, référencement) :
+
+- les textes sont **ceux de Lighthouse**, en français, avec ses liens vers la documentation
+  (Chrome for Developers, Deque…) : rien n'est reformulé ni ajouté ;
+- un point relevé sur plusieurs pages n'apparaît qu'une fois, avec la liste des pages
+  concernées, le support (bureau, mobile) et, quand Lighthouse la donne, l'économie estimée ;
+- les plus répandus viennent en premier ; ▲ signale un échec, ■ un point à améliorer, comme
+  dans Lighthouse ;
+- pour chaque page, les 5 premiers éléments en cause (extrait HTML, fichier, lien).
+
+Limites :
+- seuls les audits **en échec** (score sous 0,9, la règle du rapport Lighthouse) sont listés ;
+- les mesures (LCP, TBT…) n'y figurent pas : elles sont résumées par le score de performance ;
+- les vérifications que Lighthouse demande de faire à la main n'y figurent pas non plus ;
+- les audits réalisés avant l'ajout de cette section n'ont pas ces données : relancez-les.
+
+### Modes d'audit
+
+Au moment de lancer l'audit, trois modes au choix :
+
+| Mode | Pages en même temps | Pour quoi |
+| --- | --- | --- |
+| **Arrière-plan** | 1, Chrome en priorité basse | Continuer à travailler pendant l'audit : le PC reste fluide. Le plus long. |
+| **Personnalisé** (par défaut) | de 1 à 6, au choix | À 1 page : la mesure la plus fiable. |
+| **Rapide** | le maximum de la machine | Le plus court. |
+
+Le maximum recommandé est calculé au lancement : la moitié des cœurs du processeur, et environ
+0,7 Go de mémoire **libre** par page, au plus 6. Avec peu de mémoire libre, il peut tomber à 1 :
+fermez des applications, ou montez plus haut en mode personnalisé (l'interface prévient que la
+machine risque de ralentir).
+
+À savoir :
+- **Plusieurs pages en même temps faussent les scores de performance** : les pages se
+  partagent le processeur (le README de Lighthouse le signale aussi). L'accessibilité, les
+  bonnes pratiques et le référencement ne changent pas. Le rapport l'indique en tête.
+- **Aucun mode ne « consomme rien »** : Lighthouse a besoin du processeur. Le mode
+  arrière-plan baisse seulement la priorité de Chrome ; si le PC est très sollicité pendant
+  ce temps, la performance mesurée peut baisser un peu. Chrome ajuste lui-même la priorité de
+  quelques-uns de ses sous-processus.
+- Chaque page en parallèle a son propre processus et son propre Chrome ; tout est fermé à la
+  fin, à l'arrêt demandé et au Ctrl+C.
+
 Un seul audit tourne à la fois : un audit utilise tout Chrome, et deux audits simultanés
 fausseraient leurs mesures.
 
@@ -70,23 +115,12 @@ fausseraient leurs mesures.
 - Le bouton **Exporter le rapport (JSON)**, en bas de chaque rapport, télécharge le rapport
   complet : scores par page, moyennes, éco-index, durées.
 
-## Réglages (facultatif)
+## Aucune configuration
 
-Tout fonctionne sans configuration. Pour changer un réglage, copiez `.env.example` en `.env`
-(à la racine du dépôt), modifiez la valeur, puis relancez `npm run dev`.
-
-| Variable | Défaut | Rôle |
-| --- | --- | --- |
-| `PORT` | `4322` | Port du serveur d'audit. |
-| `WEB_PORT` | `4321` | Port de l'interface (l'adresse à ouvrir devient `http://localhost:<WEB_PORT>`). |
-| `CHROME_PATH` | détection automatique | Chemin complet de `chrome.exe` (ou d'un autre Chromium) à utiliser. |
-| `ECO_AUDIT_RUN_TIMEOUT` | `180000` | Durée maximale d'un passage Lighthouse, en millisecondes. Au-delà, Chrome est arrêté et la page est marquée en erreur. |
-| `ECO_AUDIT_DESKTOP_THROTTLING` | `provided` | `provided` : aucune simulation en bureau, on mesure votre machine telle quelle. `simulate` : réglage bureau officiel de Lighthouse, celui de PageSpeed Insights. |
-| `ECO_AUDIT_MAX_DECOUVERTE` | `500` | Nombre maximal de pages proposées par la découverte. Ce n'est pas une limite d'audit : c'est un garde-fou pour que le crawl d'un très gros site se termine. Les pages ajoutées à la main ne comptent pas. |
-| `ECO_AUDIT_DISABLE_GPU` | `0` | `1` désactive l'accélération graphique de Chrome (voir « Un audit reste bloqué »). |
-
-La détection automatique cherche Chrome dans `%ProgramFiles%`, `%ProgramFiles(x86)%` puis
-`%LOCALAPPDATA%`, et se rabat sur Microsoft Edge.
+L'outil est 100 % local et ne demande aucun fichier de configuration : l'interface est sur le
+port 4321, le serveur d'audit sur le port 4322. Chrome est trouvé automatiquement dans
+`%ProgramFiles%`, `%ProgramFiles(x86)%` puis `%LOCALAPPDATA%`, avec repli sur Microsoft Edge.
+La découverte propose au plus 500 pages ; chaque passage Lighthouse est limité à 3 minutes.
 
 ## Pourquoi mes scores diffèrent de PageSpeed Insights ou de DevTools
 
@@ -96,11 +130,10 @@ dépend de la machine, du réseau et des réglages. Les principales sources d'é
 - **Le throttling (ralentissement simulé).**
   - En **mobile**, eco-audit utilise la configuration par défaut de Lighthouse : téléphone
     moyen et 4G lente simulés. C'est aussi ce que fait PageSpeed Insights.
-  - En **bureau**, eco-audit ne simule rien par défaut (`provided`) : le score reflète votre
-    processeur et votre connexion. PageSpeed Insights simule une connexion et un processeur de
-    bureau « moyens ». Sur une machine rapide avec une bonne connexion, attendez-vous à des
-    scores de performance bureau **plus élevés** que sur PSI. Pour vous en rapprocher, passez
-    `ECO_AUDIT_DESKTOP_THROTTLING=simulate`.
+  - En **bureau**, eco-audit ne simule rien : le score reflète votre processeur et votre
+    connexion. PageSpeed Insights simule une connexion et un processeur de bureau « moyens ».
+    Sur une machine rapide avec une bonne connexion, attendez-vous à des scores de performance
+    bureau **plus élevés** que sur PSI.
 - **La machine.** Le throttling simulé part des mesures réelles : un processeur occupé
   (compilation, visioconférence, autre onglet lourd) fait baisser les scores, y compris en
   mode simulé. Fermez les applications gourmandes pendant un audit.
@@ -132,21 +165,18 @@ de la page d'accueil.
 
 - Installez [Google Chrome](https://www.google.com/chrome/), puis relancez `npm run dev`.
 - Chrome est installé à un emplacement inhabituel (version portable, Chrome Beta, Chromium) :
-  indiquez son chemin dans `.env` :
-  ```
-  CHROME_PATH=D:\Apps\Chrome\chrome.exe
+  indiquez son chemin au lancement (PowerShell) :
+  ```powershell
+  $env:CHROME_PATH = "D:\Apps\Chrome\chrome.exe"; npm run dev
   ```
 
 ### Port déjà utilisé
 
 Dans les deux cas, les deux programmes s'arrêtent aussitôt, avec un message dans le terminal :
 
-- `[serveur] … Le port 4322 est déjà utilisé` : un autre programme occupe le port du serveur
-  (souvent une instance d'eco-audit restée ouverte dans un autre terminal). Fermez-la, ou
-  choisissez un autre port avec `PORT=4330` dans `.env`.
-- `[web] Port 4321 is already in use` : même chose pour l'interface. Fermez le programme
-  concerné, ou choisissez un autre port avec `WEB_PORT=4400` dans `.env`, puis ouvrez
-  `http://localhost:4400`.
+- `[serveur] … Le port 4322 est déjà utilisé` : un autre programme occupe le port du serveur,
+  souvent une instance d'eco-audit restée ouverte dans un autre terminal. Fermez-la.
+- `[web] Port 4321 is already in use` : même chose pour l'interface.
 
 - `[web] Another astro dev server is already running` : eco-audit tourne déjà dans un autre
   terminal (Astro n'accepte qu'une interface à la fois par projet). Utilisez celle-là, ou
@@ -160,11 +190,9 @@ Get-NetTCPConnection -LocalPort 4322 -State Listen | ForEach-Object { Get-Proces
 
 ### Un audit reste bloqué ou échoue
 
-- Chaque passage Lighthouse est limité à 3 minutes (`ECO_AUDIT_RUN_TIMEOUT`). Au-delà, Chrome
-  est arrêté, la page est marquée en erreur et l'audit continue avec la page suivante.
+- Chaque passage Lighthouse est limité à 3 minutes. Au-delà, Chrome est arrêté, la page est
+  marquée en erreur et l'audit continue avec la page suivante.
 - Le bouton **Arrêter le scan** interrompt l'audit immédiatement.
-- Si Chrome se bloque régulièrement (pilote graphique instable, machine virtuelle sans GPU),
-  essayez `ECO_AUDIT_DISABLE_GPU=1` dans `.env`.
 - Une page protégée (connexion obligatoire, pare-feu applicatif, anti-bot) peut échouer ou
   être mesurée sur sa page d'erreur : le message d'erreur s'affiche dans le détail par page.
 - « Serveur injoignable » dans l'interface : le serveur d'audit s'est arrêté. Regardez les

@@ -1,24 +1,4 @@
-/**
- * Routes API — JSON uniquement.
- *
- *   GET    /api/etat                                        -> navigateur trouvé ? audit en cours ?
- *   POST   /api/discover           { url, maxPages? }       -> { jobId }
- *   GET    /api/discover/:jobId                             -> état de la découverte
- *   POST   /api/audit/:jobId       { selectedUrls }         -> lance l'audit
- *   GET    /api/status/:jobId                               -> avancement en direct
- *   GET    /api/report/:jobId                               -> rapport complet
- *   GET    /api/report/:jobId/export                        -> rapport en fichier JSON
- *   GET    /api/jobs                                        -> historique des audits
- *   POST   /api/jobs/:jobId/cancel                          -> arrêt immédiat
- *   DELETE /api/jobs/:jobId                                 -> suppression
- *
- * L'interface (astro dev) relaie `/api` vers ce serveur : même origine pour le
- * navigateur, donc aucun CORS.
- *
- * Seule exception au « JSON uniquement » : POST /api/discover accepte aussi un
- * corps `application/x-www-form-urlencoded` et répond alors par une redirection
- * 303 vers la page du job (fallback sans JavaScript, voir `isFormSubmission`).
- */
+/** Routes API — JSON uniquement. */
 
 import {
   ETATS_TERMINES,
@@ -37,31 +17,24 @@ import {
   lancerDecouverte,
 } from '../lib/taches.js';
 import { trouverNavigateur } from '../lib/chrome.js';
-import { MODE_THROTTLING_BUREAU } from '../lib/audit.js';
+import { capaciteMachine, resoudreMode } from '../lib/modes.js';
+import { redemarrageNecessaire } from '../lib/fraicheur.js';
 import { getEcoIndexGrade } from '../lib/ecoindex.js';
 import { DUREE_PAGE_ESTIMEE_MS, ECOINDEX_DISCLAIMER, LIMITE_DECOUVERTE } from '../lib/config.js';
 import { validateMaxPages, validateUrl } from '../lib/validate.js';
 import { normalizeUrl } from '../lib/http.js';
 
-/**
- * @param {import('fastify').FastifyInstance} fastify
- */
 export default async function apiRoutes(fastify) {
-  /*
-   * Tout ce que renvoie cette API est un état vivant : jamais servi depuis un
-   * cache navigateur.
-   */
+  /* Tout ce que renvoie cette API est un état vivant : jamais servi depuis un cache navigateur. */
   fastify.addHook('onSend', async (request, reply, payload) => {
     reply.header('cache-control', 'no-store');
     return payload;
   });
 
-  /* ------------------------------------------------------------------ */
-  /* GET /api/etat — le navigateur d'audit est-il disponible ?           */
-  /* ------------------------------------------------------------------ */
+  /* GET /api/etat — le navigateur d'audit est-il disponible ? */
   fastify.get('/api/etat', async (request, reply) => {
-    // Recherche refaite à chaque appel : l'utilisateur a pu installer Chrome
-    // entre-temps, ou corriger CHROME_PATH (ce dernier demande un redémarrage).
+    // Recherche refaite à chaque appel : l'utilisateur a pu installer Chrome entre-temps, ou
+    // corriger CHROME_PATH (ce dernier demande un redémarrage).
     const navigateur = trouverNavigateur();
 
     return reply.send({
@@ -69,13 +42,14 @@ export default async function apiRoutes(fastify) {
         ? { trouve: true, nom: navigateur.nom, chemin: navigateur.chemin }
         : { trouve: false, erreur: navigateur.erreur },
       auditEnCours: auditActif(),
-      throttlingBureau: MODE_THROTTLING_BUREAU,
+      // Pages mesurables en même temps (mode rapide), et ce qui la limite : voir modes.js.
+      capacite: capaciteMachine(),
+      // Code du serveur modifié depuis son démarrage : relancer `npm run dev` (voir fraicheur.js).
+      redemarrageNecessaire: redemarrageNecessaire(),
     });
   });
 
-  /* ------------------------------------------------------------------ */
-  /* POST /api/discover — création du job + découverte des pages         */
-  /* ------------------------------------------------------------------ */
+  /* POST /api/discover — création du job + découverte des pages */
   fastify.post('/api/discover', async (request, reply) => {
     const body = request.body || {};
 
@@ -90,10 +64,7 @@ export default async function apiRoutes(fastify) {
     request.log.info({ jobId, url: urlCheck.url, maxPages }, 'job créé');
     lancerDecouverte(jobId);
 
-    /*
-     * Fallback sans JavaScript : un <form> natif ne sait pas lire du JSON.
-     * Redirection relative : le navigateur reste sur l'origine de l'interface.
-     */
+    /* Fallback sans JavaScript : un <form> natif ne sait pas lire du JSON. */
     if (isFormSubmission(request)) {
       return reply.redirect(`/rapport/${jobId}`, 303);
     }
@@ -107,9 +78,7 @@ export default async function apiRoutes(fastify) {
     });
   });
 
-  /* ------------------------------------------------------------------ */
-  /* GET /api/discover/:jobId — résultat de la découverte                */
-  /* ------------------------------------------------------------------ */
+  /* GET /api/discover/:jobId — résultat de la découverte */
   fastify.get('/api/discover/:jobId', async (request, reply) => {
     const job = chargerJob(request, reply);
     if (!job) return reply;
@@ -128,9 +97,7 @@ export default async function apiRoutes(fastify) {
     });
   });
 
-  /* ------------------------------------------------------------------ */
-  /* POST /api/audit/:jobId — validation de la sélection + lancement     */
-  /* ------------------------------------------------------------------ */
+  /* POST /api/audit/:jobId — validation de la sélection + lancement */
   fastify.post('/api/audit/:jobId', async (request, reply) => {
     const job = chargerJob(request, reply);
     if (!job) return reply;
@@ -164,7 +131,10 @@ export default async function apiRoutes(fastify) {
       return reply.code(400).send({ error: validation.error });
     }
 
-    if (!confirmJobSelection(job.id, validation.urls)) {
+    // Mode d'audit choisi (économe, rapide, personnalisé) : voir modes.js.
+    const reglages = resoudreMode(body.mode, body.simultanes, validation.urls.length);
+
+    if (!confirmJobSelection(job.id, validation.urls, reglages)) {
       // L'état a changé entre la lecture et l'écriture (double clic…).
       return reply
         .code(409)
@@ -173,7 +143,7 @@ export default async function apiRoutes(fastify) {
 
     lancerAudit(job.id);
     request.log.info(
-      { jobId: job.id, retenues: validation.urls.length, navigateur: navigateur.nom },
+      { jobId: job.id, retenues: validation.urls.length, navigateur: navigateur.nom, ...reglages },
       'sélection validée, audit lancé'
     );
 
@@ -182,14 +152,14 @@ export default async function apiRoutes(fastify) {
       status: 'running',
       pages: validation.urls.length,
       selectedUrls: validation.urls,
+      mode: reglages.mode,
+      simultanes: reglages.simultanes,
       // Estimation affichée avant le premier résultat mesuré.
-      dureeEstimeeMs: validation.urls.length * DUREE_PAGE_ESTIMEE_MS,
+      dureeEstimeeMs: Math.ceil(validation.urls.length / reglages.simultanes) * DUREE_PAGE_ESTIMEE_MS,
     });
   });
 
-  /* ------------------------------------------------------------------ */
-  /* GET /api/status/:jobId — avancement en direct                       */
-  /* ------------------------------------------------------------------ */
+  /* GET /api/status/:jobId — avancement en direct */
   fastify.get('/api/status/:jobId', async (request, reply) => {
     const job = chargerJob(request, reply);
     if (!job) return reply;
@@ -203,6 +173,10 @@ export default async function apiRoutes(fastify) {
       targetUrl: job.targetUrl,
       status: job.status,
       currentUrl: job.currentUrl,
+      // Toutes les pages en cours de mesure (plusieurs en mode rapide ou personnalisé).
+      currentUrls: job.currentUrls ?? (job.currentUrl ? [job.currentUrl] : []),
+      mode: job.mode ?? 'personnalise',
+      simultanes: job.simultanes ?? 1,
       sitemapUsed: job.sitemapUsed,
       // `processedPages` inclut les pages en erreur ; `errorPages` les isole.
       processedPages: job.processedPages,
@@ -219,9 +193,7 @@ export default async function apiRoutes(fastify) {
     });
   });
 
-  /* ------------------------------------------------------------------ */
-  /* GET /api/report/:jobId — rapport complet                            */
-  /* ------------------------------------------------------------------ */
+  /* GET /api/report/:jobId — rapport complet */
   fastify.get('/api/report/:jobId', async (request, reply) => {
     const job = chargerJob(request, reply);
     if (!job) return reply;
@@ -229,9 +201,7 @@ export default async function apiRoutes(fastify) {
     return reply.send(construireRapport(job));
   });
 
-  /* ------------------------------------------------------------------ */
-  /* GET /api/report/:jobId/export — rapport à télécharger               */
-  /* ------------------------------------------------------------------ */
+  /* GET /api/report/:jobId/export — rapport à télécharger */
   fastify.get('/api/report/:jobId/export', async (request, reply) => {
     const job = chargerJob(request, reply);
     if (!job) return reply;
@@ -253,9 +223,7 @@ export default async function apiRoutes(fastify) {
       .send(JSON.stringify(construireRapport(job), null, 2));
   });
 
-  /* ------------------------------------------------------------------ */
-  /* GET /api/jobs — historique : tous les audits enregistrés            */
-  /* ------------------------------------------------------------------ */
+  /* GET /api/jobs — historique : tous les audits enregistrés */
   fastify.get('/api/jobs', async (request, reply) => {
     return reply.send({
       jobs: listJobs().map((job) => ({
@@ -270,9 +238,7 @@ export default async function apiRoutes(fastify) {
     });
   });
 
-  /* ------------------------------------------------------------------ */
-  /* POST /api/jobs/:jobId/cancel — arrêt immédiat                       */
-  /* ------------------------------------------------------------------ */
+  /* POST /api/jobs/:jobId/cancel — arrêt immédiat */
   fastify.post('/api/jobs/:jobId/cancel', async (request, reply) => {
     const job = chargerJob(request, reply);
     if (!job) return reply;
@@ -283,17 +249,15 @@ export default async function apiRoutes(fastify) {
         .send({ error: 'Cet audit est déjà terminé.', status: job.status });
     }
 
-    // Chrome est tué tout de suite : la page en cours est abandonnée, les
-    // pages déjà auditées restent. Le client voit le statut passer à « stopped ».
+    // Chrome est tué tout de suite : la page en cours est abandonnée, les pages déjà auditées
+    // restent.
     interrompreAudit(job.id);
     request.log.info({ jobId: job.id }, 'arrêt demandé par l’utilisateur');
 
     return reply.send({ jobId: job.id, cancelRequested: true });
   });
 
-  /* ------------------------------------------------------------------ */
-  /* DELETE /api/jobs/:jobId — suppression                               */
-  /* ------------------------------------------------------------------ */
+  /* DELETE /api/jobs/:jobId — suppression */
   fastify.delete('/api/jobs/:jobId', async (request, reply) => {
     const jobId = parseJobId(request.params.jobId);
     if (jobId === null) {
@@ -307,8 +271,8 @@ export default async function apiRoutes(fastify) {
     }
 
     if (!resultat.ok) {
-      // Un audit en cours produit encore des écritures : le supprimer ferait
-      // travailler la tâche sur un job disparu.
+      // Un audit en cours produit encore des écritures : le supprimer ferait travailler la tâche
+      // sur un job disparu.
       return reply.code(409).send({
         error: 'Cet audit est en cours : arrêtez-le d’abord, puis réessayez.',
         status: resultat.status,
@@ -321,9 +285,7 @@ export default async function apiRoutes(fastify) {
   });
 }
 
-/* ==========================================================================
- * Helpers de requête
- * ======================================================================== */
+/* Helpers de requête */
 
 /** `null` si l'identifiant n'est pas un entier positif. */
 function parseJobId(raw) {
@@ -331,10 +293,7 @@ function parseJobId(raw) {
   return Number.isInteger(jobId) && jobId > 0 ? jobId : null;
 }
 
-/**
- * Charge le job de l'URL, ou remplit `reply` avec la bonne erreur et renvoie
- * `null`. Les appelants font `if (!job) return reply;`.
- */
+/** Charge le job de l'URL, ou remplit `reply` avec la bonne erreur et renvoie `null`. */
 function chargerJob(request, reply) {
   const jobId = parseJobId(request.params.jobId);
 
@@ -352,30 +311,15 @@ function chargerJob(request, reply) {
   return job;
 }
 
-/**
- * Distingue une soumission de formulaire HTML d'un appel d'API.
- * Un client JSON envoie du JSON ; un navigateur sans JS envoie de
- * l'urlencoded et demande du HTML.
- */
+/** Distingue une soumission de formulaire HTML d'un appel d'API. */
 function isFormSubmission(request) {
   const contentType = request.headers['content-type'] || '';
   return contentType.includes('application/x-www-form-urlencoded');
 }
 
-/* ==========================================================================
- * Validation de la sélection
- * ======================================================================== */
+/* Validation de la sélection */
 
-/**
- * Valide la liste de pages choisie par l'utilisateur.
- *
- * Il peut retirer des pages proposées ET en ajouter à la main, mais seulement
- * sur la même origine que la cible : l'audit porte sur UN site.
- *
- * @param {unknown} urls
- * @param {object} job
- * @returns {{ok: true, urls: string[]} | {ok: false, error: string}}
- */
+/** Valide la liste de pages choisie par l'utilisateur. */
 function validerSelection(urls, job) {
   if (!Array.isArray(urls) || urls.length === 0) {
     return { ok: false, error: 'Sélectionnez au moins une page à auditer.' };
@@ -420,25 +364,26 @@ function validerSelection(urls, job) {
     return { ok: false, error: 'Aucune page valide dans la sélection.' };
   }
 
-  // Pas de plafond : en local, l'utilisateur audite autant de pages qu'il veut
-  // (l'interface le prévient au-delà de 15 pages que ce sera long).
+  // Pas de plafond : en local, l'utilisateur audite autant de pages qu'il veut (l'interface le
+  // prévient au-delà de 15 pages que ce sera long).
   return { ok: true, urls: retenues };
 }
 
-/* ==========================================================================
- * Rapport
- * ======================================================================== */
+/* Rapport */
 
 /** Rapport complet d'un job : servi en JSON et proposé à l'export. */
 function construireRapport(job) {
-  const pages = job.pages;
+  // Dans l'ordre de la sélection, et non dans l'ordre d'arrivée : en parallèle, les pages se
+  // terminent dans le désordre.
+  const rang = new Map(job.selectedUrls.map((url, i) => [url, i]));
+  const pages = [...job.pages].sort((a, b) => (rang.get(a.url) ?? 1e9) - (rang.get(b.url) ?? 1e9));
 
   return {
     jobId: job.id,
     targetUrl: job.targetUrl,
     status: job.status,
-    // Un rapport partiel reste lisible (audit arrêté ou encore en cours) :
-    // le front sait, grâce à ce drapeau, s'il doit continuer à interroger.
+    // Un rapport partiel reste lisible (audit arrêté ou encore en cours) : le front sait, grâce à
+    // ce drapeau, s'il doit continuer à interroger.
     complete: ETATS_TERMINES.includes(job.status),
     sitemapUsed: job.sitemapUsed,
     selectedUrls: job.selectedUrls,
@@ -447,8 +392,14 @@ function construireRapport(job) {
     errorPages: pages.filter((p) => p.status === 'error').length,
     pages,
     averages: computeAverages(pages),
+    // `null` : aucune page mesurée ne porte de recommandations (audit antérieur à leur ajout).
+    aCorriger: pages.some((p) => p.desktopRecommandations || p.mobileRecommandations)
+      ? regrouperRecommandations(pages)
+      : null,
     ecoindexDisclaimer: ECOINDEX_DISCLAIMER,
-    throttlingBureau: MODE_THROTTLING_BUREAU,
+    // Mode d'audit : au-delà d'une page à la fois, les scores de performance sont moins fiables.
+    mode: job.mode ?? 'personnalise',
+    simultanes: job.simultanes ?? 1,
     error: job.error,
     createdAt: job.createdAt,
     auditStartedAt: job.auditStartedAt,
@@ -456,21 +407,58 @@ function construireRapport(job) {
   };
 }
 
-/* ==========================================================================
- * Progression et temps restant
- * ======================================================================== */
+/* À corriger */
 
-/**
- * Avancement et estimation du temps restant.
- *
- * L'estimation part d'une durée moyenne théorique, puis bascule sur la moyenne
- * réellement mesurée sur ce site dès la première page auditée : un site lourd
- * et un site léger n'ont pas du tout le même rythme. C'est volontairement une
- * approximation, `estimationMesuree` dit au front laquelle il affiche.
- *
- * @param {object} job
- * @param {number[]} durees durées mesurées, en ms
- */
+/** Ordre d'affichage des catégories, celui des scores. */
+const ORDRE_CATEGORIES = ['performance', 'accessibility', 'bestPractices', 'seo'];
+
+// Regroupe les points à corriger de toutes les pages : un même audit en échec sur plusieurs pages
+// n'apparaît qu'une fois, avec la liste des pages concernées (bureau, mobile ou les deux) et, pour
+// chacune, la valeur et les éléments relevés par Lighthouse.
+function regrouperRecommandations(pages) {
+  const points = new Map();
+
+  for (const page of pages) {
+    for (const [support, liste] of [
+      ['bureau', page.desktopRecommandations],
+      ['mobile', page.mobileRecommandations],
+    ]) {
+      for (const reco of liste || []) {
+        const cle = `${reco.categorie}:${reco.id}`;
+        if (!points.has(cle)) {
+          points.set(cle, {
+            id: reco.id,
+            categorie: reco.categorie,
+            titre: reco.titre,
+            description: reco.description,
+            poids: reco.poids,
+            // Pire score relevé (0 à 0,89) : fixe la gravité affichée, comme dans Lighthouse.
+            score: reco.score,
+            pages: new Map(),
+          });
+        }
+        const point = points.get(cle);
+        point.poids = Math.max(point.poids, reco.poids);
+        point.score = Math.min(point.score, reco.score);
+        if (!point.pages.has(page.url)) point.pages.set(page.url, { url: page.url });
+        point.pages.get(page.url)[support] = { valeur: reco.valeur, elements: reco.elements };
+      }
+    }
+  }
+
+  const liste = [...points.values()].map((point) => ({ ...point, pages: [...point.pages.values()] }));
+
+  return ORDRE_CATEGORIES.map((categorie) => ({
+    categorie,
+    points: liste
+      .filter((point) => point.categorie === categorie)
+      .sort((a, b) => b.pages.length - a.pages.length || b.poids - a.poids),
+  }));
+}
+
+/* Progression et temps restant */
+
+/** Avancement et estimation du temps restant. */
 function computeProgress(job, durees) {
   const total = job.totalPages || 0;
   const faites = job.processedPages || 0;
@@ -491,24 +479,16 @@ function computeProgress(job, durees) {
     total,
     restantes,
     moyennePageMs: Math.round(moyenneMs),
-    // `null` dès que l'audit ne tourne plus : afficher un temps restant sur un
-    // audit terminé n'aurait aucun sens.
-    restantMs: enCours ? Math.round(restantes * moyenneMs) : null,
+    // `null` dès que l'audit ne tourne plus : afficher un temps restant sur un audit terminé
+    // n'aurait aucun sens.
+    restantMs: enCours ? Math.round(Math.ceil(restantes / (job.simultanes || 1)) * moyenneMs) : null,
     estimationMesuree: durees.length > 0,
   };
 }
 
-/* ==========================================================================
- * Moyennes
- * ======================================================================== */
+/* Moyennes */
 
-/**
- * Moyennes de synthèse.
- * Chaque moyenne ignore les pages où la métrique est absente, pour qu'une
- * page en erreur ne tire pas artificiellement les moyennes vers le bas.
- *
- * @param {object[]} pages
- */
+/** Moyennes de synthèse. */
 function computeAverages(pages) {
   const okPages = pages.filter((p) => p.status === 'ok');
 
@@ -536,8 +516,8 @@ function computeAverages(pages) {
 
   const ecoindex = {
     score: ecoScore,
-    // La note moyenne est recalculée depuis le score moyen (et non une
-    // « moyenne de lettres », qui n'aurait pas de sens).
+    // La note moyenne est recalculée depuis le score moyen (et non une « moyenne de lettres », qui
+    // n'aurait pas de sens).
     grade: ecoScore === null ? null : getEcoIndexGrade(ecoScore),
     ghg: avg(okPages.map((p) => p.ecoindex?.ghg)),
     water: avg(okPages.map((p) => p.ecoindex?.water)),

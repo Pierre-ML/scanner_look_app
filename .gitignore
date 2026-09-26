@@ -8,11 +8,6 @@ data/
 dist/
 .astro/
 
-# variables d'environnement
-.env
-.env.local
-.env.production
-
 # journaux
 npm-debug.log*
 yarn-debug.log*

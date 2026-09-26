@@ -1,23 +1,6 @@
-/**
- * Utilitaires partagés par les deux pages de job (`/decouverte`, `/rapport`).
- */
+/** Utilitaires partagés par les deux pages de job (`/decouverte`, `/rapport`). */
 
-/**
- * Données préparées par le serveur pour la page courante.
- *
- * Les pages `/rapport/[jobId]` et `/decouverte/[jobId]` sont rendues à la demande : leur
- * frontmatter interroge l'API et sérialise le résultat dans un
- * `<script type="application/json" id="donnees-initiales">`. Ce bloc n'est pas exécutable —
- * c'est du texte inerte pour le navigateur — donc rien de ce qu'il contient ne peut être
- * interprété comme du code, même si l'API renvoyait un jour une URL malveillante.
- *
- * Pourquoi ce canal plutôt que `define:vars` : `define:vars` interdit les imports dans le
- * script concerné, ce qui obligerait à recopier ici tout ce module.
- *
- * @returns {{jobId: string|null, etat: any, rapport: any, indisponible: string|null}}
- *   objet toujours défini ; ses champs valent `null` quand le serveur n'a rien pu fournir
- *   (API injoignable au moment du rendu), et le polling reprend alors la main normalement.
- */
+/** Données préparées par le serveur pour la page courante. */
 export function lireDonneesInitiales() {
 	const vide = { jobId: null, etat: null, rapport: null, indisponible: null };
 	const bloc = document.getElementById("donnees-initiales");
@@ -31,20 +14,7 @@ export function lireDonneesInitiales() {
 	}
 }
 
-/**
- * Numéro du job pour la page courante.
- *
- * Lu en priorité dans les données rendues par le serveur : sur une route à la demande, c'est
- * `Astro.params.jobId`, déjà validé côté serveur. Les deux replis servent aux cas où ces
- * données sont absentes :
- *
- *   1. le dernier segment du chemin — `/rapport/42`, la forme canonique, celle vers laquelle
- *      l'API redirige en 303 dans le flux sans JavaScript ;
- *   2. le paramètre `?job=42`, utile pour déboguer une page servie sans son état initial.
- *
- * @returns {string|null} le numéro sous forme de chaîne, ou `null` s'il est absent ou
- *   invalide. `null` déclenche l'affichage de l'état « job introuvable ».
- */
+/** Numéro du job pour la page courante. */
 export function lireJobId() {
 	const { jobId } = lireDonneesInitiales();
 	if (estNumero(jobId)) return jobId;
@@ -64,19 +34,7 @@ function estNumero(valeur) {
 	return typeof valeur === "string" && /^[1-9][0-9]*$/.test(valeur);
 }
 
-/**
- * Appelle l'API et renvoie son JSON.
- *
- * Distingue trois échecs, parce que l'interface les traite différemment :
- *   - `introuvable` : 404, le job n'existe pas ou a été supprimé -> message explicatif ;
- *   - `refus` : autre réponse 4xx/5xx avec un corps JSON -> on affiche son message ;
- *   - `reseau` : la requête n'a pas abouti, ou c'est le relais de `astro dev` qui a répondu
- *     à la place du serveur d'audit (arrêté : 5xx sans corps JSON) -> on invite à
- *     réessayer, sans prétendre que le job est perdu.
- *
- * @param {string} url
- * @param {RequestInit} [options]
- */
+/** Appelle l'API et renvoie son JSON. */
 export async function appeler(url, options = {}) {
 	let reponse;
 
@@ -119,25 +77,7 @@ export async function appeler(url, options = {}) {
 	return corps;
 }
 
-/**
- * Minuteur de polling qui se met en pause quand l'onglet passe en arrière-plan.
- *
- * Pourquoi : un audit dure plusieurs minutes et l'utilisateur va voir ailleurs. Continuer à
- * interroger le serveur depuis un onglet caché consomme des ressources pour un affichage que
- * personne ne regarde — sur la machine même qui mesure les performances. Les navigateurs
- * brident d'ailleurs déjà les minuteurs des onglets cachés, donc la cadence de 2 s n'y serait
- * de toute façon pas tenue.
- *
- * Au retour au premier plan, un appel est déclenché IMMÉDIATEMENT avant de reprendre la
- * cadence : sans lui, l'utilisateur regarderait jusqu'à deux secondes un avancement périmé.
- *
- * @param {() => Promise<boolean>} tache appel de polling ; renvoie `false` pour arrêter
- *   définitivement (audit terminé, job introuvable).
- * @param {number} intervalleMs
- * @param {{immediat?: boolean}} [options] `immediat: false` saute le premier appel : la page
- *   a déjà été rendue avec un état frais côté serveur, le refaire tout de suite ne
- *   changerait rien à l'affichage et gaspillerait un aller-retour.
- */
+/** Minuteur de polling qui se met en pause quand l'onglet passe en arrière-plan. */
 export function creerPolling(tache, intervalleMs = 2000, options = {}) {
 	let minuteur = null;
 	let arrete = false;
@@ -184,11 +124,8 @@ export function creerPolling(tache, intervalleMs = 2000, options = {}) {
 
 	document.addEventListener("visibilitychange", surVisibilite);
 
-	/*
-	 * Premier appel immédiat par défaut : sans état initial, la page ne doit pas rester vide
-	 * deux secondes. Quand le serveur a déjà rendu l'état (`immediat: false`), on attend le
-	 * premier tour du minuteur — l'affichage est déjà juste.
-	 */
+	// Premier appel immédiat par défaut : sans état initial, la page ne doit pas rester vide deux
+	// secondes.
 	if (options.immediat !== false) tour();
 	if (!document.hidden) planifier();
 
@@ -217,4 +154,15 @@ export function abregerUrl(url, longueur = 60) {
 	}
 	if (texte.length <= longueur) return texte;
 	return `${texte.slice(0, longueur - 1)}…`;
+}
+
+/** Chemin d'une page, requête comprise (« /blog?page=2 »), abrégé pour tenir sur une ligne. */
+export function cheminDePage(url, longueur = 42) {
+	try {
+		const { pathname, search } = new URL(url);
+		const chemin = decodeURI(pathname + search);
+		return chemin.length > longueur ? `${chemin.slice(0, longueur - 1)}…` : chemin;
+	} catch {
+		return abregerUrl(url, longueur);
+	}
 }

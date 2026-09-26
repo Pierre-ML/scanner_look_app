@@ -1,16 +1,4 @@
-/**
- * Exécution des audits Lighthouse.
- *
- * Deux runs par page, SÉQUENTIELS, sur une instance Chrome partagée :
- *   - desktop : formFactor 'desktop', throttling désactivé (par défaut)
- *   - mobile  : configuration par défaut de Lighthouse (mobile + 4G lente)
- *
- * L'éco-index est calculé à partir des audits du run DESKTOP uniquement,
- * pour que la mesure ne soit pas biaisée par le throttling mobile.
- *
- * Chrome n'est pas téléchargé : c'est celui de l'utilisateur (voir chrome.js),
- * piloté par puppeteer-core.
- */
+/** Exécution des audits Lighthouse. */
 
 import { spawnSync } from 'node:child_process';
 
@@ -25,46 +13,28 @@ import { buildEcoIndex } from './ecoindex.js';
 const CATEGORIES = ['performance', 'accessibility', 'best-practices', 'seo'];
 
 /** Délai maximal accordé à un run Lighthouse (ms). */
-const RUN_TIMEOUT_MS = Number(process.env.ECO_AUDIT_RUN_TIMEOUT || 180000);
+export const RUN_TIMEOUT_MS = 180_000;
 
-/**
- * Configuration desktop : preset bureau officiel de Lighthouse (écran
- * 1350×940, user-agent bureau), avec deux modes de throttling au choix
- * (variable ECO_AUDIT_DESKTOP_THROTTLING) :
- *
- *   - `provided` (défaut) : Lighthouse ne simule aucune latence réseau ni
- *     ralentissement CPU et utilise les conditions réelles de la machine.
- *     C'est l'intérêt de l'outil en local : le score reflète VOTRE machine et
- *     VOTRE réseau. Les valeurs de `throttling` sont mises à zéro par cohérence.
- *   - `simulate` : preset tel quel (throttling simulé « desktopDense4G »),
- *     celui de PageSpeed Insights en bureau. Scores plus proches de PSI.
- */
-export const MODE_THROTTLING_BUREAU =
-  process.env.ECO_AUDIT_DESKTOP_THROTTLING === 'simulate' ? 'simulate' : 'provided';
+// Configuration desktop : preset bureau officiel de Lighthouse (écran 1350×940, user-agent
+// bureau), avec deux modes de throttling au choix (variable ECO_AUDIT_DESKTOP_THROTTLING) :
+const DESKTOP_CONFIG = {
+  ...desktopPreset,
+  settings: {
+    ...desktopPreset.settings,
+    throttlingMethod: 'provided',
+    throttling: {
+      rttMs: 0,
+      throughputKbps: 0,
+      cpuSlowdownMultiplier: 1,
+      requestLatencyMs: 0,
+      downloadThroughputKbps: 0,
+      uploadThroughputKbps: 0,
+    },
+  },
+};
 
-const DESKTOP_CONFIG =
-  MODE_THROTTLING_BUREAU === 'simulate'
-    ? desktopPreset
-    : {
-        ...desktopPreset,
-        settings: {
-          ...desktopPreset.settings,
-          throttlingMethod: 'provided',
-          throttling: {
-            rttMs: 0,
-            throughputKbps: 0,
-            cpuSlowdownMultiplier: 1,
-            requestLatencyMs: 0,
-            downloadThroughputKbps: 0,
-            uploadThroughputKbps: 0,
-          },
-        },
-      };
-
-/**
- * Configuration mobile : on laisse Lighthouse appliquer sa config par défaut
- * (formFactor 'mobile', throttling mobileSlow4G). `undefined` = défaut.
- */
+// Configuration mobile : on laisse Lighthouse appliquer sa config par défaut (formFactor 'mobile',
+// throttling mobileSlow4G).
 const MOBILE_CONFIG = undefined;
 
 /** Flags communs aux deux runs. */
@@ -72,60 +42,29 @@ const BASE_FLAGS = {
   output: 'json',
   logLevel: 'error',
   onlyCategories: CATEGORIES,
+  // Textes des audits (titres, explications) en français : ce sont eux que le rapport affiche dans
+  // « À corriger ».
+  locale: 'fr',
   // On ignore les erreurs de certificat : beaucoup de sites de préprod en ont.
   disableStorageReset: false,
 };
 
 /** Délai maximal accordé au démarrage de Chrome (ms). */
-const LAUNCH_TIMEOUT_MS = Number(process.env.ECO_AUDIT_LAUNCH_TIMEOUT || 30000);
+const LAUNCH_TIMEOUT_MS = 30_000;
 
 /** Délai accordé aux opérations de fermeture avant de tuer Chrome de force (ms). */
 const CLOSE_TIMEOUT_MS = 10000;
 
-/**
- * Flags Chrome.
- *
- * Retirés depuis le passage en local : `--no-sandbox` / `--disable-setuid-sandbox`
- * (utiles seulement sous Linux en root ; sous Windows, ils affaibliraient la
- * protection alors qu'on charge des sites arbitraires) et `--disable-dev-shm-usage`
- * (propre à /dev/shm sous Linux).
- *
- * Les flags anti-GPU ne sont plus appliqués par défaut. Sur un serveur SANS carte
- * graphique, ils évitaient que le rendu logiciel (SwiftShader/ANGLE) parte en
- * boucle à 500 % CPU dans le gpu-process ; sur un poste avec GPU, ils forceraient
- * au contraire une rastérisation logicielle qui ralentit le rendu et éloigne les
- * métriques (LCP, TBT) de ce que mesure DevTools. Ils restent disponibles avec
- * ECO_AUDIT_DISABLE_GPU=1, si Chrome se bloque sur une machine particulière.
- */
-const CHROME_ARGS = [
-  '--no-first-run',
-  '--no-default-browser-check',
-  ...(process.env.ECO_AUDIT_DISABLE_GPU === '1'
-    ? [
-        '--disable-gpu',
-        '--disable-software-rasterizer',
-        '--disable-gpu-compositing',
-        '--use-gl=disabled',
-      ]
-    : []),
-];
+/** Flags Chrome. */
+const CHROME_ARGS = ['--no-first-run', '--no-default-browser-check'];
 
-/**
- * Tue Chrome de force, avec ses processus fils (gpu-process, renderers).
- *
- * Sous Windows, il n'y a pas de groupe de processus POSIX : `taskkill /T` tue
- * l'arbre complet à partir du PID du processus principal. Il passe AVANT le
- * kill simple : une fois le parent mort, l'arbre n'est plus retrouvable et
- * les fils resteraient orphelins. Appel SYNCHRONE, pour que la fonction reste
- * utilisable dans un handler `process.on('exit')`.
- *
- * Ailleurs, Chrome est lancé dans son propre groupe de processus : on envoie
- * SIGKILL au groupe entier pour ne laisser aucun fantôme.
- *
- * @param {import('puppeteer-core').Browser} browser
- */
+/** Tue Chrome de force, avec ses processus fils (gpu-process, renderers). */
 export function killBrowser(browser) {
-  const proc = browser?.process?.();
+  tuerArbre(browser?.process?.());
+}
+
+/** Tue un processus fils et tous ses descendants (voir `killBrowser`). */
+export function tuerArbre(proc) {
   if (!proc || !proc.pid) return;
   // Déjà terminé : rien à tuer, et son PID a pu être réattribué à un autre process.
   if (proc.exitCode !== null || proc.signalCode !== null) return;
@@ -154,12 +93,7 @@ export function killBrowser(browser) {
   }
 }
 
-/**
- * Ferme Chrome proprement, puis de force si la fermeture traîne.
- * Ne throw jamais.
- *
- * @param {import('puppeteer-core').Browser} browser
- */
+/** Ferme Chrome proprement, puis de force si la fermeture traîne. */
 export async function closeBrowser(browser) {
   if (!browser) return;
   let timer;
@@ -172,13 +106,7 @@ export async function closeBrowser(browser) {
   killBrowser(browser);
 }
 
-/**
- * Lance une instance Chrome unique, réutilisée pour toutes les pages du job.
- * Puppeteer lui donne un profil temporaire vierge : ni extensions, ni cache,
- * ni cookies de l'utilisateur ne viennent perturber les mesures.
- *
- * @returns {Promise<import('puppeteer-core').Browser>}
- */
+/** Lance une instance Chrome unique, réutilisée pour toutes les pages du job. */
 export async function launchBrowser() {
   const navigateur = trouverNavigateur();
   if (!navigateur.trouve) throw new Error(navigateur.erreur);
@@ -196,10 +124,7 @@ export async function launchBrowser() {
   });
 }
 
-/**
- * Rejette la promesse si elle dépasse `ms`. Un run Lighthouse qui part en
- * vrille ne doit pas bloquer le reste de l'audit.
- */
+/** Rejette la promesse si elle dépasse `ms`. */
 function withTimeout(promise, ms, label) {
   let timer;
   const timeout = new Promise((_, reject) => {
@@ -211,11 +136,8 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
-/**
- * Rejette la promesse dès que Chrome se ferme (tué par un arrêt demandé par
- * l'utilisateur, ou planté). Sans cela, Lighthouse ne s'en aperçoit pas et
- * attend le timeout complet du run avant de rendre la main.
- */
+// Rejette la promesse dès que Chrome se ferme (tué par un arrêt demandé par l'utilisateur, ou
+// planté).
 function tantQueConnecte(promise, browser, label) {
   let surFermeture;
   const fermeture = new Promise((_, reject) => {
@@ -228,15 +150,7 @@ function tantQueConnecte(promise, browser, label) {
   );
 }
 
-/**
- * Exécute un run Lighthouse dans un onglet dédié, systématiquement refermé.
- *
- * @param {import('puppeteer-core').Browser} browser
- * @param {string} url
- * @param {object|undefined} config
- * @param {string} label 'desktop' ou 'mobile', pour les messages d'erreur
- * @returns {Promise<object>} le LHR (Lighthouse Result)
- */
+/** Exécute un run Lighthouse dans un onglet dédié, systématiquement refermé. */
 async function runLighthouse(browser, url, config, label) {
   const page = await withTimeout(
     browser.newPage(),
@@ -256,9 +170,8 @@ async function runLighthouse(browser, url, config, label) {
         `${label} ${url}`
       );
     } catch (err) {
-      // Le timeout n'abandonne que l'attente côté JS : Chrome, lui, continue
-      // de tourner (et de consommer du CPU). On le tue pour de bon ; la tâche
-      // d'audit en relance un frais pour la page suivante.
+      // Le timeout n'abandonne que l'attente côté JS : Chrome, lui, continue de tourner (et de
+      // consommer du CPU).
       if (/^Timeout Lighthouse/.test(err.message)) killBrowser(browser);
       throw err;
     }
@@ -275,10 +188,8 @@ async function runLighthouse(browser, url, config, label) {
 
     return result.lhr;
   } finally {
-    // L'onglet est fermé même en cas d'erreur, sinon Chrome accumule les
-    // onglets zombies et la mémoire grimpe au fil des pages.
-    // Sur un Chrome tué, close() peut ne jamais répondre : on plafonne l'attente,
-    // et on ne l'attend pas du tout si Chrome est déjà fermé.
+    // L'onglet est fermé même en cas d'erreur, sinon Chrome accumule les onglets zombies et la
+    // mémoire grimpe au fil des pages.
     if (browser.connected) {
       let timer;
       await Promise.race([
@@ -292,14 +203,7 @@ async function runLighthouse(browser, url, config, label) {
   }
 }
 
-/**
- * Extrait les 4 scores d'un LHR, convertis de [0,1] vers [0,100].
- * Un score absent (catégorie non applicable) vaut `null`.
- *
- * @param {object} lhr
- * @returns {{performance: number|null, accessibility: number|null,
- *            bestPractices: number|null, seo: number|null}}
- */
+/** Extrait les 4 scores d'un LHR, convertis de [0,1] vers [0,100]. */
 export function extractScores(lhr) {
   const toPercent = (category) => {
     const score = lhr.categories?.[category]?.score;
@@ -314,20 +218,7 @@ export function extractScores(lhr) {
   };
 }
 
-/**
- * Extrait les 3 métriques brutes nécessaires à l'éco-index.
- *
- * Notes sur les identifiants d'audit (Lighthouse 13) :
- *   - le DOM vient de `dom-size-insight` (ex-`dom-size`), dont
- *     `numericValue` est le nombre total d'éléments ;
- *   - les requêtes viennent du nombre d'entrées de `network-requests` ;
- *   - le poids vient de `total-byte-weight` (`numericValue` en octets).
- *
- * Chaque métrique a un repli, car un audit peut être `notApplicable`.
- *
- * @param {object} lhr LHR du run desktop
- * @returns {{dom: number, requests: number, sizeKo: number}|null}
- */
+/** Extrait les 3 métriques brutes nécessaires à l'éco-index. */
 export function extractEcoMetrics(lhr) {
   const audits = lhr.audits || {};
 
@@ -371,24 +262,15 @@ export function extractEcoMetrics(lhr) {
   };
 }
 
-/**
- * Audite une page : run desktop, run mobile, puis calcul de l'éco-index.
- *
- * Cette fonction ne throw JAMAIS : elle renvoie toujours un objet exploitable.
- * Une page cassée produit `{status: 'error'}` et l'audit du site continue.
- *
- * @param {import('puppeteer-core').Browser} browser instance Chrome partagée
- * @param {string} url
- * @returns {Promise<{url: string, status: 'ok'|'error',
- *                    desktopScores: object|null, mobileScores: object|null,
- *                    ecoindex: object|null, error: string|null}>}
- */
+/** Audite une page : run desktop, run mobile, puis calcul de l'éco-index. */
 export async function auditPage(browser, url) {
   const result = {
     url,
     status: 'error',
     desktopScores: null,
     mobileScores: null,
+    desktopRecommandations: null,
+    mobileRecommandations: null,
     ecoindex: null,
     error: null,
   };
@@ -399,6 +281,7 @@ export async function auditPage(browser, url) {
   try {
     const lhr = await runLighthouse(browser, url, DESKTOP_CONFIG, 'desktop');
     result.desktopScores = extractScores(lhr);
+    result.desktopRecommandations = extractRecommandations(lhr);
 
     const metrics = extractEcoMetrics(lhr);
     if (metrics) {
@@ -414,6 +297,7 @@ export async function auditPage(browser, url) {
   try {
     const lhr = await runLighthouse(browser, url, MOBILE_CONFIG, 'mobile');
     result.mobileScores = extractScores(lhr);
+    result.mobileRecommandations = extractRecommandations(lhr);
   } catch (err) {
     errors.push(`mobile : ${err.message}`);
   }
@@ -423,6 +307,81 @@ export async function auditPage(browser, url) {
   result.error = errors.length > 0 ? errors.join(' | ') : null;
 
   return result;
+}
+
+/** Clés des catégories Lighthouse, telles que les scores les nomment côté API. */
+const CLES_CATEGORIES = {
+  performance: 'performance',
+  accessibility: 'accessibility',
+  'best-practices': 'bestPractices',
+  seo: 'seo',
+};
+
+// Groupes d'audits qui ne sont PAS des corrections : `metrics` rassemble les mesures (LCP, TBT…),
+// déjà résumées par le score de performance ; `hidden` contient ce que Lighthouse lui-même
+// n'affiche pas dans son rapport.
+const GROUPES_EXCLUS = new Set(['metrics', 'hidden']);
+
+/** Modes d'audit sans verdict réussi / échoué : à vérifier à la main, sans objet, ou informatif. */
+const MODES_EXCLUS = new Set(['notApplicable', 'manual', 'informative', 'error']);
+
+/** Au plus 5 éléments concernés par audit : de quoi situer le problème, sans alourdir le rapport. */
+const MAX_ELEMENTS = 5;
+
+// Ce que Lighthouse demande de corriger sur la page : les audits en échec, avec le texte que
+// Lighthouse fournit lui-même (titre, explication avec liens, valeur), et les premiers éléments
+// concernés.
+export function extractRecommandations(lhr) {
+  const resultat = [];
+
+  for (const [cleLighthouse, categorie] of Object.entries(lhr.categories || {})) {
+    const cle = CLES_CATEGORIES[cleLighthouse];
+    if (!cle) continue;
+
+    for (const ref of categorie.auditRefs || []) {
+      if (GROUPES_EXCLUS.has(ref.group)) continue;
+      const audit = lhr.audits?.[ref.id];
+      if (!audit || MODES_EXCLUS.has(audit.scoreDisplayMode)) continue;
+      if (typeof audit.score !== 'number' || audit.score >= 0.9) continue;
+
+      resultat.push({
+        id: ref.id,
+        categorie: cle,
+        titre: audit.title,
+        description: audit.description || '',
+        valeur: audit.displayValue || null,
+        score: audit.score,
+        poids: ref.weight || 0,
+        elements: extraireElements(audit),
+      });
+    }
+  }
+
+  return resultat;
+}
+
+// Libellés des premiers éléments concernés par un audit, tels que Lighthouse les décrit : extrait
+// HTML de l'élément, adresse de la ressource, ou lien.
+function extraireElements(audit) {
+  const items = Array.isArray(audit.details?.items) ? audit.details.items : [];
+  const libelles = [];
+
+  for (const item of items) {
+    const libelle =
+      item.node?.snippet ||
+      (typeof item.url === 'string' && item.url) ||
+      item.source?.url ||
+      (typeof item.href === 'string' && item.href) ||
+      item.node?.nodeLabel ||
+      null;
+    if (typeof libelle !== 'string' || libelle.trim() === '') continue;
+    const propre = libelle.trim().replace(/\s+/g, ' ');
+    if (libelles.includes(propre)) continue;
+    libelles.push(propre.length > 200 ? `${propre.slice(0, 199)}…` : propre);
+    if (libelles.length >= MAX_ELEMENTS) break;
+  }
+
+  return libelles;
 }
 
 function numberOrNull(value) {

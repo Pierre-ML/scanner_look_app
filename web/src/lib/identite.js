@@ -1,10 +1,5 @@
-/**
- * Identité de l'outil : source unique lue par le layout et les pages, pour que l'information
- * ne puisse pas diverger d'une page à l'autre si elle change un jour.
- *
- * eco-audit tourne en LOCAL, sur la machine de l'utilisateur : pas d'éditeur de service en
- * ligne, pas d'hébergeur, pas de données collectées — donc pas de pages légales.
- */
+// Identité de l'outil : source unique lue par le layout et les pages, pour que l'information ne
+// puisse pas diverger d'une page à l'autre si elle change un jour.
 
 /** L'auteur, cité en pied de page : le site en reprend l'identité visuelle du portfolio. */
 export const EDITEUR = {
@@ -28,10 +23,7 @@ export const SITE = {
 	langue: "fr-FR",
 };
 
-/**
- * Pas de plafond de pages par audit : en local, l'utilisateur audite autant de pages qu'il
- * veut. Ces deux valeurs ne limitent rien, elles guident seulement la sélection.
- */
+/** Pas de plafond de pages par audit : en local, l'utilisateur audite autant de pages qu'il veut. */
 
 /** Pages cochées d'office après la découverte (les premières du plan de site). */
 export const SELECTION_PAR_DEFAUT = 8;
@@ -42,11 +34,7 @@ export const SEUIL_AUDIT_LONG = 15;
 /** Durée moyenne d'une page (bureau + mobile), pour l'estimation affichée avant l'audit. */
 export const DUREE_PAGE_ESTIMEE_MS = 25_000;
 
-/**
- * Avertissement éco-index. Recopié mot pour mot depuis `ECOINDEX_DISCLAIMER` du serveur, qui
- * le renvoie aussi dans chaque rapport (`ecoindexDisclaimer`) : cette constante ne sert
- * qu'aux pages où aucun rapport n'a encore été chargé (accueil).
- */
+/** Avertissement éco-index. */
 export const AVERTISSEMENT_ECOINDEX =
 	"Estimation calculée localement à partir des mesures Lighthouse " +
 	"(éléments du DOM, requêtes, poids transféré), selon la méthodologie " +

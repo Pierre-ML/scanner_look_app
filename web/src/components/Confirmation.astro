@@ -1,0 +1,33 @@
+---
+/** Fenêtre de confirmation du site, à la place du `window.confirm` du navigateur. */
+import Icone from "./Icone.astro";
+---
+
+<dialog id="fenetre-confirmation" class="modal" aria-labelledby="confirmation-titre" aria-describedby="confirmation-message">
+	<div class="modal-box max-w-md rounded-box border border-obsidian-border bg-obsidian-card p-6 sm:p-7">
+		<div class="flex items-start gap-4">
+			<span class="grid size-11 shrink-0 place-items-center rounded-full bg-primary/15">
+				{/* Corbeille pour une suppression, « info » pour un simple message : voir `annuler`. */}
+				<span data-icone="suppression" class="grid place-items-center"><Icone nom="corbeille" taille={22} classe="text-accent" /></span>
+				<span data-icone="information" hidden class="grid place-items-center"><Icone nom="info" taille={22} classe="text-accent" /></span>
+			</span>
+			<div class="min-w-0">
+				<h2 id="confirmation-titre" class="font-titre tracking-[0.02em] text-xl text-cream"></h2>
+				<p id="confirmation-message" class="mt-2 text-sm leading-relaxed text-cream-muted"></p>
+			</div>
+		</div>
+
+		<form method="dialog" class="modal-action mt-7 flex-wrap gap-3">
+			<button id="confirmation-annuler" value="annuler" class="btn btn-ghost" autofocus>Annuler</button>
+			<button id="confirmation-valider" value="confirmer" class="btn btn-error gap-2">
+				<Icone nom="corbeille" taille={18} />
+				<span id="confirmation-action">Supprimer</span>
+			</button>
+		</form>
+	</div>
+
+	{/* Clic à côté de la fenêtre : fermeture sans réponse, donc « Annuler ». */}
+	<form method="dialog" class="modal-backdrop bg-obsidian/80 backdrop-blur-sm">
+		<button tabindex="-1">Annuler</button>
+	</form>
+</dialog>

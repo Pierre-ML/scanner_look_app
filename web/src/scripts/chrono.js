@@ -1,22 +1,4 @@
-/**
- * Compte à rebours en temps réel, calé sur l'estimation de l'API.
- *
- * L'API renvoie `progression.restantMs` toutes les deux secondes (à chaque tour de polling).
- * Afficher cette valeur telle quelle donnerait un chiffre qui saute par paliers de 2 s, et qui
- * remonte brusquement quand la moyenne mesurée change. Ici :
- *
- *   - l'estimation fixe une ÉCHÉANCE (maintenant + restant), et l'affichage décompte vers elle
- *     chaque seconde, entre deux réponses de l'API ;
- *   - une nouvelle estimation proche de l'échéance courante (moins de 4 s d'écart) est
- *     ignorée : le chrono ne tremble pas pour du bruit ;
- *   - un écart plus grand recale l'échéance, en douceur si le chrono doit reculer — un compte
- *     à rebours qui remonte d'une minute d'un coup se lit comme un bogue ;
- *   - arrivé à zéro alors que l'audit tourne encore, le chrono ne passe pas en négatif : il
- *     affiche « Finalisation… » jusqu'à la prochaine estimation.
- *
- * L'échéance est une heure absolue (`Date.now()`), donc un onglet mis en arrière-plan puis
- * rouvert affiche immédiatement le bon temps, même si les minuteurs ont été bridés entre-temps.
- */
+/** Compte à rebours en temps réel, calé sur l'estimation de l'API. */
 
 /** Écart en deçà duquel une nouvelle estimation est ignorée. */
 const TOLERANCE_MS = 4000;
@@ -39,13 +21,6 @@ function formaterPhrase(ms) {
 	return `environ ${minutes} minute${minutes > 1 ? "s" : ""}`;
 }
 
-/**
- * @param {object} elements
- * @param {HTMLElement} elements.chiffres   texte « mm:ss »
- * @param {SVGCircleElement} [elements.anneau] cercle dont le trait se vide avec le temps
- * @param {HTMLElement} [elements.lecture]  zone `aria-live`, mise à jour à chaque minute
- * @param {HTMLElement} [elements.legende]  texte sous le chrono (source de l'estimation)
- */
 export function creerChrono({ chiffres, anneau, lecture, legende }) {
 	/** Heure absolue (ms) à laquelle l'audit devrait se terminer. */
 	let echeance = null;
@@ -100,20 +75,13 @@ export function creerChrono({ chiffres, anneau, lecture, legende }) {
 	}
 
 	return {
-		/**
-		 * Reçoit une nouvelle estimation de l'API.
-		 * @param {number} restantMs
-		 * @param {{mesuree?: boolean, attente?: boolean}} [options] `attente` : l’audit est lancé
-		 *   mais aucune page n’a encore commencé.
-		 */
+		/** Reçoit une nouvelle estimation de l'API. */
 		caler(restantMs, { mesuree = false, attente = false } = {}) {
 			if (typeof restantMs !== "number" || !Number.isFinite(restantMs) || restantMs < 0) return;
 			const nouvelle = Date.now() + restantMs;
 
-			/*
-			 * Passage de la file à l'exécution : l'estimation change de nature (elle ne compte
-			 * plus l'attente), on repart d'elle sans lissage.
-			 */
+			// Passage de la file à l'exécution : l'estimation change de nature (elle ne compte plus
+			// l'attente), on repart d'elle sans lissage.
 			const nouvellePhase = attente ? "attente" : "audit";
 			if (phase !== null && phase !== nouvellePhase) {
 				echeance = null;
@@ -127,20 +95,13 @@ export function creerChrono({ chiffres, anneau, lecture, legende }) {
 				reference = Math.max(restantMs, 1000);
 			} else {
 				const ecart = nouvelle - echeance;
-				/*
-				 * En file d'attente, l'API renvoie la même durée d'audit à chaque tour, puisque rien
-				 * n'a commencé : la suivre ferait remonter le chrono sans cesse. On le laisse donc
-				 * descendre, sans jamais reculer l'échéance, jusqu’au démarrage de l’audit.
-				 */
+				// En file d'attente, l'API renvoie la même durée d'audit à chaque tour, puisque rien n'a
+				// commencé : la suivre ferait remonter le chrono sans cesse.
 				if (attente && ecart > 0) {
 					// Rien : l'échéance courante est conservée.
 				} else if (Math.abs(ecart) > TOLERANCE_MS) {
-					/*
-					 * Recul (l'audit prendra plus longtemps que prévu) : on n'absorbe que la moitié
-					 * de l'écart par estimation. Le chrono remonte par petits pas plutôt que d'un
-					 * bond, et converge en deux ou trois tours de polling. Une avance, elle, est
-					 * appliquée d'un coup : finir plus tôt que prévu ne surprend personne.
-					 */
+					// Recul (l'audit prendra plus longtemps que prévu) : on n'absorbe que la moitié de l'écart
+					// par estimation.
 					echeance = ecart > 0 ? echeance + ecart / 2 : nouvelle;
 				}
 				// L'anneau ne doit jamais se remplir à rebours : la référence ne fait que grandir.

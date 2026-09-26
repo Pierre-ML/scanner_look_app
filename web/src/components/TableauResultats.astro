@@ -1,21 +1,10 @@
 ---
-/**
- * Coquille du tableau détaillé page par page. Les lignes sont écrites par
- * `src/scripts/rapport.js` au fil du polling : le site étant statique, aucune donnée n'est
- * connue au build.
- *
- * Accessibilité du tableau :
- *   - un `<caption>` décrit son contenu (il peut être masqué visuellement, pas supprimé) ;
- *   - chaque `<th>` porte un `scope`, sans quoi un lecteur d'écran n'associe pas les
- *     cellules à leurs en-têtes ;
- *   - les deux niveaux d'en-tête (bureau / mobile, puis Perf / A11y / BP / SEO) sont liés
- *     par `colspan` et un second rang de `<th scope="col">`.
- */
+/** Coquille du tableau détaillé page par page. */
 import Icone from "./Icone.astro";
 ---
 
 <div class="overflow-x-auto rounded-box border border-obsidian-border">
-	<table class="w-full min-w-[54rem] border-collapse text-sm">
+	<table class="w-full min-w-[64rem] border-collapse text-sm">
 		<caption class="sr-only">
 			Résultats détaillés par page : scores Lighthouse bureau et mobile, éco-index et durée
 			de mesure.
@@ -41,7 +30,7 @@ import Icone from "./Icone.astro";
 						Mobile
 					</span>
 				</th>
-				<th scope="col" rowspan="2" class="border-l border-obsidian-border p-3 text-right align-bottom font-titre tracking-wide">
+				<th scope="col" rowspan="2" class="border-l border-obsidian-border p-3 text-center align-bottom font-titre tracking-wide">
 					<span class="inline-flex items-center gap-2">
 						<Icone nom="feuille" taille={18} classe="text-primary" />
 						Éco-index
@@ -54,17 +43,17 @@ import Icone from "./Icone.astro";
 					</span>
 				</th>
 			</tr>
-			<tr class="libelle-hud">
-				<th scope="col" class="p-2 text-right" title="Performance">Perf</th>
-				<th scope="col" class="p-2 text-right" title="Accessibilité">A11y</th>
-				<th scope="col" class="p-2 text-right" title="Bonnes pratiques">BP</th>
-				<th scope="col" class="p-2 text-right">SEO</th>
-				<th scope="col" class="border-l border-obsidian-border p-2 text-right" title="Performance">
+			<tr class="font-corps text-micro tracking-hud uppercase text-cream-dark">
+				<th scope="col" class="p-2 text-center" title="Performance">Perf</th>
+				<th scope="col" class="p-2 text-center" title="Accessibilité">A11y</th>
+				<th scope="col" class="p-2 text-center" title="Bonnes pratiques">BP</th>
+				<th scope="col" class="p-2 text-center">SEO</th>
+				<th scope="col" class="border-l border-obsidian-border p-2 text-center" title="Performance">
 					Perf
 				</th>
-				<th scope="col" class="p-2 text-right" title="Accessibilité">A11y</th>
-				<th scope="col" class="p-2 text-right" title="Bonnes pratiques">BP</th>
-				<th scope="col" class="p-2 text-right">SEO</th>
+				<th scope="col" class="p-2 text-center" title="Accessibilité">A11y</th>
+				<th scope="col" class="p-2 text-center" title="Bonnes pratiques">BP</th>
+				<th scope="col" class="p-2 text-center">SEO</th>
 			</tr>
 		</thead>
 

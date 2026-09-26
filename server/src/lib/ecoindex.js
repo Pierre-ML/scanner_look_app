@@ -1,26 +1,7 @@
-/**
- * Calcul de l'EcoIndex — implémentation locale de la méthodologie officielle.
- *
- * SOURCES :
- *   - Données de référence (quantiles, seuils de note, couleurs) :
- *     https://github.com/cnumr/ecoindex_reference  (fichier ecoindex_reference.json)
- *   - Implémentation de référence (formules) :
- *     https://github.com/cnumr/ecoindex_js  (src/index.js, branche 1.x)
- *   - Méthodologie : collectif GreenIT.fr / CNUMR, http://www.ecoindex.fr
- *
- * AVERTISSEMENT IMPORTANT
- * -----------------------
- * Le score produit ici est une ESTIMATION calculée localement à partir des
- * mesures Lighthouse (nombre d'éléments du DOM, nombre de requêtes, poids
- * transféré). Ce n'est PAS un résultat officiel du service ecoindex.fr :
- * les conditions de mesure (navigateur, throttling, cache, géolocalisation)
- * diffèrent, donc les valeurs peuvent s'écarter de celles du site officiel.
- */
+/** Calcul de l'EcoIndex — implémentation locale de la méthodologie officielle. */
 
-/**
- * Quantiles de référence (21 valeurs = les centiles 0, 5, 10 … 100 observés
- * sur le corpus GreenIT). Repris tels quels de ecoindex_reference.json.
- */
+// Quantiles de référence (21 valeurs = les centiles 0, 5, 10 … 100 observés sur le corpus
+// GreenIT).
 const QUANTILES_DOM = [
   0, 47, 75, 159, 233, 298, 358, 417, 476, 537, 603, 674, 753, 843, 949, 1076,
   1237, 1459, 1801, 2479, 594601,
@@ -49,14 +30,8 @@ export const ECOINDEX_GRADES = [
   { value: 0, grade: 'G', color: '#ED2124' },
 ];
 
-/**
- * Position d'une valeur dans l'échelle des quantiles, avec interpolation
- * linéaire à l'intérieur de l'intervalle. Résultat dans [0, 20].
- *
- * @param {number[]} quantiles échelle de référence (croissante)
- * @param {number} value valeur mesurée
- * @returns {number}
- */
+// Position d'une valeur dans l'échelle des quantiles, avec interpolation linéaire à l'intérieur de
+// l'intervalle.
 export function computeQuantile(quantiles, value) {
   for (let i = 1; i < quantiles.length; i++) {
     if (value < quantiles[i]) {
@@ -69,14 +44,7 @@ export function computeQuantile(quantiles, value) {
   return quantiles.length - 1;
 }
 
-/**
- * Score EcoIndex brut (0-100). Le DOM pèse 3, les requêtes 2, le poids 1.
- *
- * @param {number} dom nombre d'éléments du DOM
- * @param {number} req nombre de requêtes réseau
- * @param {number} sizeKo poids total transféré, en Ko
- * @returns {number} score non arrondi, borné à [0, 100]
- */
+/** Score EcoIndex brut (0-100). */
 export function computeEcoIndex(dom, req, sizeKo) {
   const qDom = computeQuantile(QUANTILES_DOM, dom);
   const qReq = computeQuantile(QUANTILES_REQ, req);
@@ -86,11 +54,7 @@ export function computeEcoIndex(dom, req, sizeKo) {
   return Math.min(100, Math.max(0, score));
 }
 
-/**
- * Note A-G correspondant à un score.
- * @param {number} score
- * @returns {string}
- */
+/** Note A-G correspondant à un score. */
 export function getEcoIndexGrade(score) {
   const found = ECOINDEX_GRADES.find((g) => score > g.value);
   return found ? found.grade : 'G';
@@ -102,29 +66,17 @@ export function getGradeColor(grade) {
   return found ? found.color : '#ED2124';
 }
 
-/**
- * Émission de gaz à effet de serre estimée, en gCO2e (entre 1 et 3).
- * Formule officielle : 2 + 2 * (50 - ecoIndex) / 100
- */
+/** Émission de gaz à effet de serre estimée, en gCO2e (entre 1 et 3). */
 export function computeGreenhouseGases(score) {
   return round2(2 + (2 * (50 - score)) / 100);
 }
 
-/**
- * Consommation d'eau estimée, en cL (entre 1,5 et 4,5).
- * Formule officielle : 3 + 3 * (50 - ecoIndex) / 100
- */
+/** Consommation d'eau estimée, en cL (entre 1,5 et 4,5). */
 export function computeWaterConsumption(score) {
   return round2(3 + (3 * (50 - score)) / 100);
 }
 
-/**
- * Point d'entrée : construit l'objet éco-index complet stocké en base.
- *
- * @param {{dom: number, requests: number, sizeKo: number}} metrics
- * @returns {{score: number, grade: string, ghg: number, water: number,
- *            dom: number, requests: number, sizeKo: number}}
- */
+/** Point d'entrée : construit l'objet éco-index complet stocké en base. */
 export function buildEcoIndex({ dom, requests, sizeKo }) {
   const rawScore = computeEcoIndex(dom, requests, sizeKo);
   const score = round2(rawScore);

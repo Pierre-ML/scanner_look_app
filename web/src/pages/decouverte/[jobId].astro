@@ -3,27 +3,15 @@ import Layout from "../../layouts/Layout.astro";
 import Icone from "../../components/Icone.astro";
 import AuditIndisponible from "../../components/AuditIndisponible.astro";
 import Chargeur from "../../components/Chargeur.astro";
+import ChoixMode from "../../components/ChoixMode.astro";
 import { routesServeur, chargerEtatInitial } from "../../lib/api-serveur.js";
 
-/**
- * Sélection des pages à auditer — `/decouverte/[jobId]`, RENDUE À LA DEMANDE.
- *
- * Même raison que pour le rapport : un jobId naît après le déploiement, `getStaticPaths` ne
- * peut pas l'énumérer au build.
- *
- * L'étape elle-même reste tributaire du JavaScript : cocher une liste puis poster un tableau
- * JSON n'a pas d'équivalent en HTML natif. Le rendu serveur apporte deux choses malgré tout :
- *   - les pages découvertes voyagent avec le document, donc la liste s'affiche sans
- *     aller-retour et sans écran d'attente quand la découverte est déjà finie ;
- *   - le numéro du job est connu du serveur, ce qui rend enfin possible la redirection sans
- *     JavaScript vers `/rapport/:jobId` — impossible en pré-généré, où le document ne savait
- *     pas de quel job il parlait.
- */
+/** Sélection des pages à auditer — `/decouverte/[jobId]`, RENDUE À LA DEMANDE. */
 export const prerender = false;
 
 const { jobId } = Astro.params;
 
-/** État de la découverte, avant le rendu du HTML. Adresse directe du serveur d'audit. */
+/** État de la découverte, avant le rendu du HTML. */
 const decouverteInitiale = await chargerEtatInitial(routesServeur.decouverte(jobId));
 
 /* Job inexistant ou supprimé : la page répond elle-même en 404, comme le rapport. */
@@ -45,27 +33,13 @@ const donneesInitiales = {
 	indisponible: decouverteInitiale.cas === "indisponible" ? decouverteInitiale.message : null,
 };
 
-/**
- * L'audit est-il déjà lancé ? Il n'y a alors plus rien à sélectionner, et la page doit
- * conduire au rapport. Redirection côté serveur : immédiate, et valable sans JavaScript.
- */
+/** L'audit est-il déjà lancé ? */
 const dejaLance = ["queued", "running", "done", "stopped"].includes(etat?.status);
 if (dejaLance) {
 	return Astro.redirect(`/rapport/${jobId}`, 303);
 }
 
-/*
- * La liste des pages n'est volontairement PAS rendue en HTML côté serveur.
- *
- * Elle ne serait utile à personne : le bloc applicatif est masqué sans JavaScript (ses cases
- * et ses boutons n'aboutiraient à rien), et un visiteur sans JavaScript est redirigé vers le
- * rapport. La rendre deux fois — une fois en Astro, une fois dans `creerLigne` — créerait deux
- * chemins de rendu à garder synchronisés, pour un gain nul.
- *
- * Ce que le rendu serveur apporte ici est ailleurs : les données voyagent dans
- * `#donnees-initiales`, et le script construit la liste dès le chargement, sans l'aller-retour
- * réseau qui affichait auparavant « Découverte en cours… » même sur une découverte terminée.
- */
+/* La liste des pages n'est volontairement PAS rendue en HTML côté serveur. */
 ---
 
 {
@@ -83,16 +57,7 @@ if (dejaLance) {
 		set:html={JSON.stringify(donneesInitiales).replaceAll("<", "\\u003c")}
 	/>
 
-	{/*
-	 * Comportement dégradé sans JavaScript : redirection directe vers le rapport.
-	 *
-	 * Le `<meta http-equiv="refresh">` dans un `<noscript>` n'est suivi que si le JavaScript
-	 * est indisponible — c'est le seul moyen de rediriger en HTML pur. Il est désormais
-	 * écrivable parce que le serveur connaît le numéro du job : en pré-généré, le document ne
-	 * savait pas de quel audit il parlait et cette redirection était impossible.
-	 *
-	 * Le lien qui suit couvre les rares navigateurs où le rafraîchissement est bloqué.
-	 */}
+	{/* Comportement dégradé sans JavaScript : redirection directe vers le rapport. */}
 	<noscript>
 		<meta http-equiv="refresh" content={`0; url=/rapport/${jobId}`} />
 		<p class="flex items-start gap-2 rounded-box border border-obsidian-border bg-obsidian-card p-4 text-sm text-cream-muted">
@@ -105,31 +70,22 @@ if (dejaLance) {
 		</p>
 	</noscript>
 
-	{/*
-	 * Toujours masqué au départ, contrairement à la page de rapport : ce bloc contient des
-	 * cases à cocher et des boutons qui n'aboutissent à rien sans JavaScript. Les montrer à un
-	 * utilisateur qui ne peut pas s'en servir serait un piège — d'où le `hidden`, levé par le
-	 * script, tandis que le `<noscript>` ci-dessus le mène au rapport.
-	 */}
+	{/* Toujours masqué au départ, contrairement à la page de rapport : ce bloc contient des cases à
+	    cocher et des boutons qui n'aboutissent à rien sans JavaScript. */}
 	<div id="application" hidden>
 		<header>
-			<p class="libelle-hud flex items-center gap-2">
+			<p class="font-corps text-micro tracking-hud uppercase text-cream-dark flex items-center gap-2">
 				<Icone nom="radar" taille={18} classe="text-primary" />
 				Étape 2 sur 3 · Sélection
 			</p>
-			<h1 class="mt-3 text-titre-page leading-tight">Quelles pages auditer ?</h1>
+			<h1 class="font-titre tracking-[0.02em] mt-3 text-titre-page leading-tight">Quelles pages auditer ?</h1>
 			<p class="mt-3 text-cream-muted">
 				Site cible :{" "}
 				<span id="cible" class="text-cream">…</span>
 			</p>
 		</header>
 
-		{/* ------------------------------------------------ découverte en cours
-		 *
-		 * Même chargeur que celui de l'accueil : l'utilisateur qui vient de valider le formulaire
-		 * voit la même animation se poursuivre, sans rupture d'une page à l'autre. Le composant
-		 * porte déjà son `role="status"` : la phase en cours est annoncée, poliment.
-		 */}
+		{/* découverte en cours */}
 		<Chargeur
 			id="etat-attente"
 			classe="mt-8"
@@ -139,10 +95,10 @@ if (dejaLance) {
 			Le plan de site est lu en premier ; à défaut, les liens internes sont suivis.
 		</Chargeur>
 
-		{/* ------------------------------------------------------ liste et choix */}
+		{/* liste et choix */}
 		<section id="etat-liste" hidden class="mt-8">
-			<div class="flex flex-wrap items-baseline justify-between gap-3 border-b filet pb-3">
-				<h2 class="text-xl tracking-wide">
+			<div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-obsidian-border pb-3">
+				<h2 class="font-titre tracking-[0.02em] text-xl">
 					Pages découvertes
 					<span id="compteur-decouvertes" class="text-cream-dark"></span>
 				</h2>
@@ -154,25 +110,18 @@ if (dejaLance) {
 				</div>
 			</div>
 
-			{/*
-			 * `<fieldset>` + `<legend>` : sans eux, un lecteur d'écran annonce une suite de cases
-			 * sans dire de quoi elles relèvent. La légende est masquée visuellement (le `<h2>`
-			 * au-dessus joue ce rôle à l'œil) mais reste lue.
-			 */}
+			{/* `<fieldset>` + `<legend>` : sans eux, un lecteur d'écran annonce une suite de cases sans dire
+			    de quoi elles relèvent. */}
 			<fieldset class="mt-4">
 				<legend class="sr-only">Pages à inclure dans l’audit</legend>
 				<ul id="liste-pages" class="divide-y divide-obsidian-border"></ul>
 			</fieldset>
 
-			{/* ------------------------------------------- ajout manuel */}
+			{/* ajout manuel */}
 			<div class="mt-6 rounded-box border border-obsidian-border bg-obsidian-card p-5">
-				<h3 class="font-titre tracking-wide">Ajouter une page à la main</h3>
-				{/*
-				 * Le champ ne doit pas laisser croire qu'on peut scanner un autre domaine : le
-				 * préfixe de l'origine est affiché en clair et n'est pas modifiable, on ne saisit
-				 * que le chemin. La validation côté client complète cet indice visuel — et l'API
-				 * revalide de son côté (même origine que la cible, sinon 400).
-				 */}
+				<h3 class="font-titre tracking-[0.02em]">Ajouter une page à la main</h3>
+				{/* Le champ ne doit pas laisser croire qu'on peut scanner un autre domaine : le préfixe de
+				    l'origine est affiché en clair et n'est pas modifiable, on ne saisit que le chemin. */}
 				<p id="aide-ajout" class="mt-1 text-sm text-cream-muted">
 					Uniquement sur le site audité : seul le chemin est saisissable.
 				</p>
@@ -203,18 +152,17 @@ if (dejaLance) {
 				</p>
 			</div>
 
-			{/* ------------------------------------------------- lancement */}
-			<div class="mt-8 flex flex-col gap-4 border-t filet pt-6">
+			{/* lancement */}
+			<div class="mt-8 flex flex-col gap-4 border-t border-obsidian-border pt-6">
+				<ChoixMode />
+
 				<p class="text-sm text-cream-muted" aria-live="polite">
 					<span id="resume-selection">Aucune page sélectionnée.</span>{" "}
 					<span class="text-cream-dark">
 						Pas de limite de pages. Environ 25 secondes par page.
 					</span>
-					{/*
-					 * Avertissement, pas interdiction : au-delà de SEUIL_AUDIT_LONG pages cochées,
-					 * l'audit se compte en dizaines de minutes. Le texte (avec la durée estimée) est
-					 * écrit par le script.
-					 */}
+					{/* Avertissement, pas interdiction : au-delà de SEUIL_AUDIT_LONG pages cochées, l'audit se
+					    compte en dizaines de minutes. */}
 					<span id="avertissement-long" hidden class="mt-1 block text-alerte"></span>
 				</p>
 
@@ -223,10 +171,7 @@ if (dejaLance) {
 					<span id="erreur-lancement-texte"></span>
 				</p>
 
-				{/*
-				 * Retour à gauche, action principale à droite. Même ordre dans le HTML qu'à l'écran :
-				 * la navigation au clavier (Tab) suit ce que l'utilisateur voit.
-				 */}
+				{/* Retour à gauche, action principale à droite. */}
 				<div class="flex flex-wrap items-center justify-between gap-3">
 					<a href="/" class="btn btn-ghost gap-2">
 						<Icone nom="retour" taille={20} />
@@ -240,9 +185,9 @@ if (dejaLance) {
 			</div>
 		</section>
 
-		{/* ----------------------------------------------------------- erreurs */}
+		{/* erreurs */}
 		<section id="etat-erreur" hidden class="mt-8 rounded-box border border-obsidian-border bg-obsidian-card p-6">
-			<h2 class="flex items-center gap-2.5 text-xl tracking-wide">
+			<h2 class="font-titre tracking-[0.02em] flex items-center gap-2.5 text-xl">
 				<Icone nom="alerte" taille={22} classe="text-primary" />
 				<span id="titre-erreur">Audit impossible</span>
 			</h2>
@@ -274,14 +219,12 @@ if (dejaLance) {
 		lireDonneesInitiales,
 		lireJobId,
 	} from "../../scripts/job.js";
+	import { initialiserChoixMode } from "../../scripts/mode-audit.js";
 
-	/*
-	 * L'interface est masquée dans le HTML (`hidden` sur #application) et révélée ici : c'est ce
-	 * qui garantit que l'utilisateur sans JavaScript voit le bloc <noscript> et RIEN d'autre,
-	 * plutôt qu'un écran de chargement qui ne finira jamais.
-	 */
+	// L'interface est masquée dans le HTML (`hidden` sur #application) et révélée ici : c'est ce qui
+	// garantit que l'utilisateur sans JavaScript voit le bloc <noscript> et RIEN d'autre, plutôt
+	// qu'un écran de chargement qui ne finira jamais.
 	const application = document.querySelector<HTMLElement>("#application");
-	application.hidden = false;
 
 	/** État déjà obtenu par le serveur : évite le premier aller-retour. */
 	const initiales = lireDonneesInitiales();
@@ -300,18 +243,7 @@ if (dejaLance) {
 		}
 	}
 
-	/*
-	 * Le chargeur est rendu masqué (voir `Chargeur.astro`) : on part donc explicitement sur
-	 * l'écran d'attente. Si la découverte est déjà finie, l'hydratation bascule sur la liste
-	 * dans la foulée, avant le premier affichage.
-	 */
-	montrer("attente");
-
-	/**
-	 * Affiche une erreur. `introuvable` reçoit l'explication : un audit absent a été effacé
-	 * (depuis « Mes audits » ou en vidant `data/`), le dire évite à l'utilisateur de chercher
-	 * ce qu'il a mal fait.
-	 */
+	/** Affiche une erreur. */
 	function echouer(genre, message) {
 		const titre = document.querySelector("#titre-erreur");
 		const detail = document.querySelector("#detail-erreur");
@@ -335,17 +267,25 @@ if (dejaLance) {
 		montrer("erreur");
 	}
 
-	document.querySelector("#reessayer").addEventListener("click", () => {
+	document.querySelector("#reessayer")?.addEventListener("click", () => {
 		window.location.reload();
 	});
 
-	if (!jobId) {
-		echouer("introuvable", "Aucun numéro d’audit dans l’adresse de cette page.");
-	} else {
-		demarrer(jobId);
-	}
+	// Audit introuvable : le serveur a rendu l'explication À LA PLACE de l'interface (pas de
+	// #application).
+	if (application) {
+		application.hidden = false;
 
-	/* ==================================================================== */
+		// Le chargeur est rendu masqué (voir `Chargeur.astro`) : on part donc explicitement sur l'écran
+		// d'attente.
+		montrer("attente");
+
+		if (!jobId) {
+			echouer("introuvable", "Aucun numéro d’audit dans l’adresse de cette page.");
+		} else {
+			demarrer(jobId);
+		}
+	}
 
 	function demarrer(id) {
 		/** Origine de la cible, servie de garde-fou à l'ajout manuel. */
@@ -355,18 +295,15 @@ if (dejaLance) {
 		const resume = document.querySelector("#resume-selection");
 		const boutonLancer = document.querySelector<HTMLButtonElement>("#lancer-audit");
 
-		/*
-		 * Poll de la découverte. L'API expose `ready` : vrai dès que des pages sont proposées et
-		 * que le statut a quitté `discovering`. On ne recalcule pas cette condition côté client.
-		 */
-		/**
-		 * Applique un état de découverte à la page.
-		 *
-		 * Utilisé à l'identique par l'hydratation initiale et par chaque tour de polling : un
-		 * seul chemin de rendu, donc aucun risque que le premier affichage diverge des suivants.
-		 *
-		 * @returns {boolean} `true` pour continuer à interroger l'API.
-		 */
+		/* Mode d'audit (arrière-plan, personnalisé, rapide). */
+		let modeAudit = null;
+		modeAudit = initialiserChoixMode({
+			nombrePages: () => selection().length,
+			auChangement: () => rafraichirResume(),
+		});
+
+		/* Poll de la découverte. */
+		/** Applique un état de découverte à la page. */
 		function appliquerEtat(etat) {
 			document.querySelector("#cible").textContent = abregerUrl(etat.targetUrl, 80);
 			enregistrerAudit({ i: Number(id), u: abregerCible(etat.targetUrl), s: etat.status, v: Date.now() });
@@ -377,11 +314,8 @@ if (dejaLance) {
 				return false;
 			}
 
-			/*
-			 * L'audit a déjà été lancé (second onglet, ou lancement survenu pendant que la page
-			 * était ouverte) : il n'y a plus rien à sélectionner, on va droit au rapport. Au
-			 * premier rendu, ce cas est déjà traité par une redirection 303 côté serveur.
-			 */
+			// L'audit a déjà été lancé (second onglet, ou lancement survenu pendant que la page était
+			// ouverte) : il n'y a plus rien à sélectionner, on va droit au rapport.
 			if (["queued", "running", "done", "stopped"].includes(etat.status)) {
 				window.location.replace(`/rapport/${id}`);
 				return false;
@@ -396,16 +330,7 @@ if (dejaLance) {
 			return false;
 		}
 
-		/*
-		 * Hydratation : le serveur a déjà interrogé l'API pendant le rendu de la page. Quand la
-		 * découverte était terminée, la liste s'affiche donc immédiatement, et aucun polling
-		 * n'est même ouvert — c'est le cas courant, la découverte étant bien plus rapide qu'un
-		 * audit.
-		 *
-		 * Quand le serveur n'a rien obtenu (API momentanément muette), `etatHydrate` reste faux
-		 * et le polling garde son premier appel immédiat : l'écran d'attente ne doit pas durer
-		 * deux secondes de plus que nécessaire.
-		 */
+		/* Hydratation : le serveur a déjà interrogé l'API pendant le rendu de la page. */
 		let etatHydrate = false;
 		if (initiales.etat) {
 			etatHydrate = true;
@@ -421,32 +346,29 @@ if (dejaLance) {
 			}
 		}, 2000, { immediat: !etatHydrate });
 
-		/* -------------------------------------------------- rendu de la liste */
+		/* rendu de la liste */
 
 		function afficherPages(urls) {
 			document.querySelector("#compteur-decouvertes").textContent = `(${urls.length})`;
 			document.querySelector("#prefixe-origine").textContent = origine ?? "";
 
-			/*
-			 * Les {SELECTION_PAR_DEFAUT} premières pages sont cochées d'office : c'est l'ordre du
-			 * plan de site (ou de la découverte), donc en général l'accueil et les pages
-			 * principales. Les autres restent à un clic, sans limite.
-			 */
+			// Les {SELECTION_PAR_DEFAUT} premières pages sont cochées d'office : c'est l'ordre du plan de
+			// site (ou de la découverte), donc en général l'accueil et les pages principales.
 			liste.replaceChildren(...urls.map((url, rang) => creerLigne(url, false, rang < SELECTION_PAR_DEFAUT)));
 			rafraichirResume();
 		}
 
-		/**
-		 * Une ligne = une case à cocher CARRÉE (jamais ronde : un rond se lit comme un bouton
-		 * radio, or ces choix sont cumulables) et l'URL complète, sélectionnable.
-		 */
+		// Une ligne = une case à cocher CARRÉE (jamais ronde : un rond se lit comme un bouton radio, or
+		// ces choix sont cumulables) et l'URL complète, sélectionnable.
 		function creerLigne(url, ajoutee = false, cochee = true) {
 			const element = document.createElement("li");
 			element.className = "flex items-start gap-3 py-3 transition-opacity duration-200 has-[:disabled]:opacity-50";
 
 			const case_ = document.createElement("input");
 			case_.type = "checkbox";
-			case_.className = "checkbox checkbox-primary mt-0.5 shrink-0";
+			// Case CARRÉE (`rounded-[0.25rem]`) : une forme ronde se lirait comme un bouton radio, « un
+			// choix parmi plusieurs », alors que ces cases sont cumulables.
+			case_.className = "checkbox checkbox-primary mt-0.5 shrink-0 rounded-[0.25rem]";
 			case_.checked = cochee;
 			case_.value = url;
 			case_.id = `page-${liste.children.length}-${Date.now()}`;
@@ -463,7 +385,7 @@ if (dejaLance) {
 
 			if (ajoutee) {
 				const marque = document.createElement("span");
-				marque.className = "libelle-hud mt-1 block";
+				marque.className = "font-corps text-micro tracking-hud uppercase text-cream-dark mt-1 block";
 				marque.textContent = "Ajoutée manuellement";
 				etiquette.append(marque);
 			}
@@ -477,10 +399,7 @@ if (dejaLance) {
 			return [...liste.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:checked')].map((c) => c.value);
 		}
 
-		/**
-		 * Met à jour le résumé. Aucun plafond : au-delà de {SEUIL_AUDIT_LONG} pages cochées, on
-		 * prévient seulement que l'audit sera long, avec sa durée estimée.
-		 */
+		/** Met à jour le résumé. */
 		function rafraichirResume() {
 			const nombre = selection().length;
 
@@ -489,7 +408,7 @@ if (dejaLance) {
 			if (nombre > SEUIL_AUDIT_LONG) {
 				avertissement.textContent =
 					`Attention : avec ${nombre} pages, l’audit peut être très long (environ ` +
-					`${formaterDuree(nombre * DUREE_PAGE_ESTIMEE_MS)}). Vous pourrez l’arrêter à tout ` +
+					`${formaterDuree(Math.ceil(nombre / (modeAudit?.simultanes() ?? 1)) * DUREE_PAGE_ESTIMEE_MS)}). Vous pourrez l’arrêter à tout ` +
 					"moment : les pages déjà mesurées seront conservées.";
 			}
 
@@ -510,7 +429,7 @@ if (dejaLance) {
 			rafraichirResume();
 		});
 
-		/* ------------------------------------------------------ ajout manuel */
+		/* ajout manuel */
 
 		const champ = document.querySelector<HTMLInputElement>("#chemin-manuel");
 		const zoneErreurAjout = document.querySelector<HTMLElement>("#erreur-ajout");
@@ -530,13 +449,7 @@ if (dejaLance) {
 				return;
 			}
 
-			/*
-			 * Validation côté client. Elle sert de retour immédiat, pas de sécurité : l'API
-			 * revalide chaque URL (même origine que la cible, sinon refus 400). Une saisie
-			 * absolue est acceptée si — et seulement si — elle vise la même origine ; dans tous
-			 * les autres cas elle est résolue comme un chemin relatif à la cible, ce qui rend
-			 * impossible de viser un autre domaine par accident.
-			 */
+			/* Validation côté client. */
 			let candidate;
 			try {
 				candidate = new URL(saisie, origine);
@@ -585,7 +498,7 @@ if (dejaLance) {
 			}
 		});
 
-		/* --------------------------------------------------------- lancement */
+		/* lancement */
 
 		const libelleLancer = document.querySelector("#libelle-lancer");
 		const zoneErreurLancement = document.querySelector<HTMLElement>("#erreur-lancement");
@@ -605,30 +518,24 @@ if (dejaLance) {
 			libelleLancer.textContent = "Lancement…";
 
 			try {
-				/*
-				 * Refus possibles, affichés tels quels sous le bouton : un autre audit tourne déjà
-				 * (409 avec `auditEnCours`), ou aucun navigateur n'a été trouvé (503, avec la
-				 * marche à suivre).
-				 */
+				// Refus possibles, affichés tels quels sous le bouton : un autre audit tourne déjà (409 avec
+				// `auditEnCours`), ou aucun navigateur n'a été trouvé (503, avec la marche à suivre).
 				await appeler(routes.auditer(id), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ selectedUrls: urls }),
+					body: JSON.stringify({
+						selectedUrls: urls,
+						mode: modeAudit?.mode() ?? "personnalise",
+						simultanes: modeAudit?.simultanes() ?? 1,
+					}),
 				});
 
 				enregistrerAudit({ i: Number(id), s: "running", n: urls.length, v: Date.now() });
 				polling.stop();
 				window.location.replace(`/rapport/${id}`);
 			} catch (erreur) {
-				/*
-				 * 409 : le job n'est plus en attente de validation — le plus souvent un double
-				 * clic, ou un audit déjà lancé depuis un autre onglet. Le rapport est alors la
-				 * bonne destination, et non un message d'erreur.
-				 *
-				 * Exception : 409 avec `auditEnCours`, c'est un AUTRE audit qui occupe Chrome (un
-				 * seul à la fois). Ce job-ci attend toujours : on affiche le message, sélection
-				 * intacte, pour relancer une fois l'autre terminé.
-				 */
+				// 409 : le job n'est plus en attente de validation — le plus souvent un double clic, ou un
+				// audit déjà lancé depuis un autre onglet.
 				if (erreur.statut === 409 && !erreur.corps?.auditEnCours) {
 					polling.stop();
 					window.location.replace(`/rapport/${id}`);

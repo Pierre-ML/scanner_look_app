@@ -6,22 +6,11 @@ import IndicateursSysteme from "../components/IndicateursSysteme.astro";
 import Chargeur from "../components/Chargeur.astro";
 import { routes } from "../lib/api.js";
 
-/**
- * `prerender = true` : explicite, bien que ce soit le défaut en `output: 'static'`. Cette page
- * est entièrement fixe et ne dépend d'aucune donnée du serveur au rendu. L'historique des
- * audits (cookie) y est donc lu côté client.
- */
+/** `prerender = true` : explicite, bien que ce soit le défaut en `output: 'static'`. */
 export const prerender = true;
 
-/**
- * Action du formulaire natif : un chemin RELATIF sur l'interface elle-même (`/api/discover`),
- * que `astro dev` relaie vers le serveur d'audit local (voir astro.config.mjs).
- *
- * Le flux sans JavaScript reste intact : le navigateur envoie du
- * `application/x-www-form-urlencoded`, le serveur reconnaît ce type de contenu et répond par
- * une redirection 303 vers `/rapport/:jobId`. Il n'y a pas d'étape de sélection, qui
- * demanderait du JavaScript.
- */
+// Action du formulaire natif : un chemin RELATIF sur l'interface elle-même (`/api/discover`), que
+// `astro dev` relaie vers le serveur d'audit local (voir astro.config.mjs).
 const actionApi = routes.decouvrir();
 
 /** Les trois étapes d'un audit, numérotées à la manière du HUD du portfolio. */
@@ -63,10 +52,10 @@ const MESURES = [
 ---
 
 <Layout titre="Auditer un site" large={true} logoAnime={true}>
-	{/* ================================================================== héros */}
+	{/* héros */}
 	<section class="relative">
 		<div
-			class="apparition flex items-center justify-between border-b filet pb-3 font-mono text-nano tracking-hud-large text-cream-dark uppercase"
+			class="animate-apparition flex items-center justify-between border-b border-obsidian-border pb-3 font-mono text-nano tracking-hud-large text-cream-dark uppercase"
 		>
 			<span>eco-audit // 2026</span>
 			<span class="hidden sm:inline">Performance · Accessibilité · Éco-conception</span>
@@ -74,38 +63,28 @@ const MESURES = [
 		</div>
 
 		<div class="mx-auto mt-12 max-w-3xl text-center sm:mt-16">
-			<h1 class="apparition text-titre-page leading-[1.05]" style="--retard: 80ms">
+			<h1 class="font-titre tracking-[0.02em] animate-apparition text-titre-page leading-[1.05] [--retard:80ms]">
 				Auditez un site,<br />
 				<span class="text-cream-dark">une adresse suffit.</span>
 			</h1>
-			<p class="apparition mx-auto mt-5 max-w-xl text-lg leading-relaxed text-cream-muted" style="--retard: 160ms">
+			<p class="animate-apparition mx-auto mt-5 max-w-xl text-lg leading-relaxed text-cream-muted [--retard:160ms]">
 				Les pages sont découvertes pour vous, puis mesurées par Lighthouse en bureau et en
 				mobile. Le rapport se construit en direct, page par page.
 			</p>
 		</div>
 
-		{/* ============================================================ formulaire
-		 *
-		 * Un seul champ visible. Le nombre de pages n'est pas demandé : le choix se fait à
-		 * l'étape suivante, liste sous les yeux — c'est là qu'il a du sens.
-		 *
-		 * `novalidate` n'est PAS posé : la validation native du navigateur est le seul filet
-		 * disponible quand le JavaScript ne s'exécute pas. `type="text"` + `pattern` tolérant
-		 * plutôt que `type="url"`, qui refuse « exemple.fr » — or l'API accepte cette forme et
-		 * préfixe elle-même en https://.
-		 */}
+		{/* formulaire */}
 		<form
 			id="formulaire-audit"
 			method="post"
 			action={actionApi}
 			enctype="application/x-www-form-urlencoded"
-			class="apparition mx-auto mt-10 max-w-2xl"
-			style="--retard: 240ms"
+			class="animate-apparition mx-auto mt-10 max-w-2xl [--retard:240ms]"
 		>
 			<label for="url" class="sr-only">Adresse du site à auditer</label>
 			<div
 				id="champ-url"
-				class="champ-principal flex flex-col gap-2 rounded-[1.75rem] border border-obsidian-border bg-obsidian-card p-2 sm:flex-row sm:items-center sm:rounded-full"
+				class="transition-[border-color,box-shadow] duration-200 ease-douce focus-within:border-cream-dark focus-within:shadow-[0_0_0_4px_rgb(122_12_13/0.25)] data-invalide:border-echec flex flex-col gap-2 rounded-[1.75rem] border border-obsidian-border bg-obsidian-card p-2 sm:flex-row sm:items-center sm:rounded-full"
 			>
 				<div class="flex flex-1 items-center gap-3 pl-3">
 					<Icone nom="globe" taille={22} classe="shrink-0 text-primary" />
@@ -134,13 +113,7 @@ const MESURES = [
 				Le protocole est facultatif : <code class="text-cream-muted">exemple.fr</code> suffit.
 			</p>
 
-			{/*
-			 * Zone de message d'erreur, SOUS le champ concerné.
-			 *
-			 * `role="alert"` : un message qui apparaît après une action doit être annoncé sans que
-			 * l'utilisateur ait à aller le chercher. Le texte est en `text-echec` (#ff9d9f, ~8,6:1)
-			 * et non en carmin : le carmin plafonne à 2,45:1 sur l'obsidian, sous le seuil WCAG AA.
-			 */}
+			{/* Zone de message d'erreur, SOUS le champ concerné. */}
 			<p id="erreur-formulaire" role="alert" hidden class="mt-3 flex items-start justify-center gap-2 text-sm text-echec">
 				<Icone nom="alerte" taille={18} classe="mt-0.5 shrink-0 text-primary" />
 				<span id="erreur-formulaire-texte"></span>
@@ -161,10 +134,8 @@ const MESURES = [
 				</li>
 			</ul>
 
-			{/*
-			 * Sans JavaScript, l'étape de sélection n'existe pas : autant le dire ici plutôt que de
-			 * laisser l'utilisateur le découvrir après coup.
-			 */}
+			{/* Sans JavaScript, l'étape de sélection n'existe pas : autant le dire ici plutôt que de laisser
+			    l'utilisateur le découvrir après coup. */}
 			<noscript>
 				<p class="mt-6 flex items-start gap-2 rounded-box border border-obsidian-border bg-obsidian-card p-4 text-left text-sm text-cream-muted">
 					<Icone nom="info" taille={18} classe="mt-0.5 shrink-0 text-primary" />
@@ -177,25 +148,21 @@ const MESURES = [
 			</noscript>
 		</form>
 
-		<IndicateursSysteme classe="apparition mx-auto mt-10 max-w-2xl [--retard:320ms]" />
+		<IndicateursSysteme classe="animate-apparition mx-auto mt-10 max-w-2xl [--retard:320ms]" />
 	</section>
 
-	{/* ======================================================== derniers audits
-	 *
-	 * Rempli côté client depuis le cookie `eco_audits` : la page est pré-générée, elle ne voit
-	 * pas les cookies au rendu. Masqué tant que l'historique est vide.
-	 */}
+	{/* derniers audits */}
 	<section id="derniers-audits" hidden class="mx-auto mt-14 max-w-2xl" aria-labelledby="titre-derniers-audits">
 		<div class="flex items-baseline justify-between gap-3">
-			<h2 id="titre-derniers-audits" class="libelle-hud">Vos derniers audits</h2>
+			<h2 id="titre-derniers-audits" class="font-corps text-micro tracking-hud uppercase text-cream-dark">Vos derniers audits</h2>
 			<a href="/mes-audits" class="text-sm text-cream-muted hover:text-cream hover:underline">Tout voir</a>
 		</div>
 		<ul id="liste-derniers-audits" class="mt-3 divide-y divide-obsidian-border rounded-box border border-obsidian-border bg-obsidian-card"></ul>
 	</section>
 
-	{/* ================================================================ étapes */}
+	{/* étapes */}
 	<section class="mt-20" aria-labelledby="titre-etapes">
-		<h2 id="titre-etapes" class="sr-only">Comment se déroule un audit</h2>
+		<h2 id="titre-etapes" class="font-titre tracking-[0.02em] sr-only">Comment se déroule un audit</h2>
 		<ol class="grid gap-8 sm:grid-cols-3">
 			{
 				ETAPES.map((etape) => (
@@ -211,9 +178,9 @@ const MESURES = [
 		</ol>
 	</section>
 
-	{/* =============================================================== mesures */}
+	{/* mesures */}
 	<section class="mt-20" aria-labelledby="titre-mesures">
-		<h2 id="titre-mesures" class="text-2xl tracking-wide">Ce que mesure un audit</h2>
+		<h2 id="titre-mesures" class="font-titre tracking-[0.02em] text-2xl">Ce que mesure un audit</h2>
 		<dl class="mt-6 grid gap-4 md:grid-cols-3">
 			{
 				MESURES.map((mesure) => (
@@ -245,17 +212,7 @@ const MESURES = [
 </Layout>
 
 <script>
-	/**
-	 * Amélioration progressive du formulaire.
-	 *
-	 * Le formulaire fonctionne sans ce script : il poste nativement sur l'API, qui redirige en
-	 * 303 vers le rapport. Ce script intercepte la soumission pour appeler l'API en JSON, montre
-	 * l'écran d'attente, enregistre l'audit dans l'historique du navigateur, puis renvoie vers
-	 * `/decouverte/:jobId`.
-	 *
-	 * Si l'appel échoue pour une raison réseau, le formulaire natif n'est PAS rejoué : cela
-	 * doublerait la création de job. On affiche l'erreur et on laisse l'utilisateur réessayer.
-	 */
+	/** Amélioration progressive du formulaire. */
 	import { LIBELLE_STATUT, routes } from "../lib/api.js";
 	import { abregerCible, enregistrerAudit, lireHistorique } from "../lib/historique.js";
 
@@ -267,19 +224,17 @@ const MESURES = [
 	const texteErreur = document.querySelector("#erreur-formulaire-texte");
 	const chargeur = document.querySelector<HTMLElement>("#chargeur-envoi");
 
-	/* ------------------------------------------------ pré-remplissage `?url=` */
+	/* pré-remplissage `?url=` */
 
-	/*
-	 * « Relancer cet audit » (page Mes audits, résumé d'un rapport supprimé) arrive ici avec
-	 * `?url=exemple.fr` : le champ est pré-rempli, il ne reste qu'à valider.
-	 */
+	// « Relancer cet audit » (page Mes audits, résumé d'un rapport supprimé) arrive ici avec
+	// `?url=exemple.fr` : le champ est pré-rempli, il ne reste qu'à valider.
 	const prerempli = new URLSearchParams(window.location.search).get("url");
 	if (prerempli) {
 		champ.value = prerempli.slice(0, 2000);
 		bouton.focus();
 	}
 
-	/* --------------------------------------------------------------- erreurs */
+	/* erreurs */
 
 	function afficherErreur(message) {
 		texteErreur.textContent = message;
@@ -305,7 +260,7 @@ const MESURES = [
 		chargeur.hidden = !verrouille;
 	}
 
-	/* -------------------------------------------------------------- envoi */
+	/* envoi */
 
 	formulaire.addEventListener("submit", async (evenement) => {
 		// La validation native a déjà tourné : si elle avait échoué, `submit` ne serait pas émis.
@@ -340,11 +295,8 @@ const MESURES = [
 				s: "discovering",
 			});
 
-			/*
-			 * `replace` et non `assign` : le retour arrière depuis la page de sélection doit ramener
-			 * au formulaire, pas le resoumettre. L'écran d'attente reste affiché jusqu'au
-			 * changement de page, où la découverte prend le relais avec le même chargeur.
-			 */
+			// `replace` et non `assign` : le retour arrière depuis la page de sélection doit ramener au
+			// formulaire, pas le resoumettre.
 			window.location.replace(`/decouverte/${corps.jobId}`);
 		} catch {
 			verrouiller(false);
@@ -352,15 +304,13 @@ const MESURES = [
 		}
 	});
 
-	/*
-	 * Retour arrière vers cette page depuis le cache de navigation (bfcache) : le chargeur
-	 * serait resté affiché, figé sur l'état d'avant le départ.
-	 */
+	// Retour arrière vers cette page depuis le cache de navigation (bfcache) : le chargeur serait
+	// resté affiché, figé sur l'état d'avant le départ.
 	window.addEventListener("pageshow", (evenement) => {
 		if (evenement.persisted) verrouiller(false);
 	});
 
-	/* ----------------------------------------------------- derniers audits */
+	/* derniers audits */
 
 	const historique = lireHistorique();
 	if (historique.length > 0) {

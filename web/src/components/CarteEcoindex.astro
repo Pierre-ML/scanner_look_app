@@ -1,21 +1,12 @@
 ---
-/**
- * Carte éco-index : la note A–G dans une jauge circulaire (l'anneau suit le score sur 100),
- * puis les mesures qui la composent et ses équivalents estimés.
- *
- * Couleur de la jauge : celle de la note — A et B en vert, C et D en ambre, E à G en rose —
- * sur les mêmes couleurs de texte AA que les scores Lighthouse. La lettre est écrite au
- * centre : la couleur ne porte jamais seule l'information.
- *
- * `data-eco` porte la clé de chaque valeur dans `averages.ecoindex` : le script du rapport
- * les met à jour pendant l'audit (voir `afficherMoyennes`).
- */
+// Carte éco-index : la note A–G dans une jauge circulaire (l'anneau suit le score sur 100), puis
+// les mesures qui la composent et ses équivalents estimés.
 import Icone from "./Icone.astro";
 import JaugeScore from "./JaugeScore.astro";
 
 const { eco = null } = Astro.props;
 
-/** Couleur de la note A–G. Même table que le script du rapport (`couleurNote`). */
+/** Couleur de la note A–G. */
 const couleurNote = (note) => {
 	if (note === "A" || note === "B") return "text-ok";
 	if (note === "C" || note === "D") return "text-alerte";
@@ -23,7 +14,7 @@ const couleurNote = (note) => {
 	return "text-cream-dark";
 };
 
-/** Une valeur physique arrondie, suivie de son unité, ou « — ». Identique au script. */
+/** Une valeur physique arrondie, suivie de son unité, ou « — ». */
 const mesure = (valeur, unite, decimales = 1) =>
 	typeof valeur === "number" && !Number.isNaN(valeur)
 		? `${valeur.toFixed(decimales).replace(".", ",")} ${unite}`
@@ -42,10 +33,10 @@ const MESURES = [
 ---
 
 <section id="carte-eco" class="rounded-box border border-obsidian-border bg-obsidian-card p-5 sm:p-6">
-	<h3 class="flex items-center gap-2.5 text-base tracking-wide">
+	<h3 class="font-titre tracking-[0.02em] flex items-center gap-2.5 text-base">
 		<Icone nom="feuille" taille={22} classe="text-primary" />
 		Éco-index
-		<span class="libelle-hud ml-1">estimation locale</span>
+		<span class="font-corps text-micro tracking-hud uppercase text-cream-dark ml-1">estimation locale</span>
 	</h3>
 
 	<div class="mt-6 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-10">
