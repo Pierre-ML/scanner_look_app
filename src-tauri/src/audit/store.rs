@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -109,6 +109,12 @@ pub struct Job {
     pub simultanes: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub priorite_basse: Option<bool>,
+    // Durée d'une page relevée sur les audits précédents de cette machine (estimation de départ).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub duree_page_estimee_ms: Option<Nombre>,
+    // Début de mesure de chaque page en cours (en mémoire seulement) : affine le temps restant.
+    #[serde(skip)]
+    pub debuts: HashMap<String, Instant>,
     #[serde(flatten)]
     pub autres: Map<String, Value>,
 }
@@ -378,8 +384,40 @@ impl Store {
         self.modifier(id, |job| {
             // `currentUrl` (la première) reste servie pour les clients qui n'en lisent qu'une.
             job.current_url = urls.first().cloned();
+            job.debuts.retain(|url, _| urls.contains(url));
+            for url in &urls {
+                job.debuts.entry(url.clone()).or_insert_with(Instant::now);
+            }
             job.current_urls = urls;
         });
+    }
+
+    // Durée moyenne d'une page sur les audits déjà faits ici (les 60 dernières pages réussies),
+    // de préférence au même nombre de pages simultanées ; `None` sans historique.
+    pub fn duree_page_historique(&self, simultanes: u64) -> Option<f64> {
+        let interne = self.verrou();
+        let mut jobs: Vec<&Job> = interne.jobs.values().collect();
+        jobs.sort_by_key(|job| std::cmp::Reverse(job.id));
+        let durees = |meme_reglage: bool| -> Vec<f64> {
+            jobs.iter()
+                .filter(|job| !meme_reglage || job.simultanes.unwrap_or(1) == simultanes)
+                .flat_map(|job| job.pages.iter())
+                .filter(|page| page.status == "ok")
+                .filter_map(|page| page.duration_ms.map(|d| d.0))
+                .filter(|d| *d > 0.0)
+                .take(60)
+                .collect()
+        };
+        let mut retenues = durees(true);
+        if retenues.is_empty() {
+            retenues = durees(false);
+        }
+        (!retenues.is_empty()).then(|| retenues.iter().sum::<f64>() / retenues.len() as f64)
+    }
+
+    /// Note l'estimation de départ d'un audit (durée d'une page, en millisecondes).
+    pub fn noter_duree_estimee(&self, id: u64, duree_ms: f64) {
+        self.modifier(id, |job| job.duree_page_estimee_ms = Some(Nombre(duree_ms.round())));
     }
 
     /// Ajoute le résultat d'une page et met le compteur à jour dans la même écriture.

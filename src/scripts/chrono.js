@@ -1,7 +1,7 @@
 /** Compte à rebours en temps réel, calé sur l'estimation de l'API. */
 
 /** Écart en deçà duquel une nouvelle estimation est ignorée. */
-const TOLERANCE_MS = 4000;
+const TOLERANCE_MS = 2000;
 
 /** « 03:07 » ; « 1:03:07 » au-delà d'une heure. */
 export function formaterChrono(ms) {
@@ -110,8 +110,8 @@ export function creerChrono({ chiffres, anneau, lecture, legende }) {
 
 			if (legende) {
 				legende.textContent = mesuree
-					? "Estimation d’après les pages déjà mesurées."
-					: "Estimation initiale, affinée dès la première page mesurée.";
+					? "Estimation d’après les pages déjà mesurées et celles en cours."
+					: "Estimation de départ, affinée à chaque page mesurée.";
 			}
 
 			dessiner();

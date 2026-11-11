@@ -295,7 +295,7 @@ if (dejaLance) {
 		const resume = document.querySelector("#resume-selection");
 		const boutonLancer = document.querySelector<HTMLButtonElement>("#lancer-audit");
 
-		/* Mode d'audit (arrière-plan, personnalisé, rapide). */
+		/* Mode d’audit (conseillé, arrière-plan, personnalisé, rapide). */
 		let modeAudit = null;
 		modeAudit = initialiserChoixMode({
 			nombrePages: () => selection().length,
@@ -525,7 +525,7 @@ if (dejaLance) {
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						selectedUrls: urls,
-						mode: modeAudit?.mode() ?? "personnalise",
+						mode: modeAudit?.mode() ?? "conseille",
 						simultanes: modeAudit?.simultanes() ?? 1,
 					}),
 				});

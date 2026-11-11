@@ -69,7 +69,7 @@ const simultanes = rapport?.simultanes ?? etat?.simultanes ?? 1;
 const libelleMode =
 	modeAudit === "econome"
 		? "Arrière-plan — une page à la fois, priorité basse"
-		: `${modeAudit === "rapide" ? "Rapide" : "Personnalisé"} — ${
+		: `${modeAudit === "conseille" ? "Conseillé" : modeAudit === "rapide" ? "Rapide" : "Personnalisé"} — ${
 				simultanes > 1 ? `${simultanes} pages en même temps` : "une page à la fois"
 			}`;
 

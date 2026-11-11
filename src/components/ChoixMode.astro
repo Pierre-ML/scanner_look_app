@@ -2,6 +2,11 @@
 // Choix du mode d'audit ; logique dans src/scripts/mode-audit.js.
 const MODES = [
 	{
+		cle: "conseille",
+		titre: "Conseillé",
+		texte: "Eco Audit choisit seul le nombre de pages en même temps, d’après votre PC, sans le ralentir.",
+	},
+	{
 		cle: "econome",
 		titre: "Arrière-plan",
 		texte: "Une page à la fois, Chrome en priorité basse : votre PC reste fluide. Le plus long.",
@@ -22,7 +27,7 @@ const MODES = [
 <fieldset id="choix-mode" class="rounded-box border border-base-300 bg-base-200 p-5">
 	<legend class="px-2 text-micro tracking-hud uppercase text-muted">Mode d’audit</legend>
 
-	<div class="grid gap-3 md:grid-cols-3">
+	<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
 		{
 			MODES.map((mode) => (
 				<label class="flex cursor-pointer items-start gap-3 rounded-box border border-base-300 p-4 transition-colors duration-200 hover:border-base-content/30 has-checked:border-base-content/40 has-checked:bg-base-300">
@@ -30,7 +35,7 @@ const MODES = [
 						type="radio"
 						name="mode-audit"
 						value={mode.cle}
-						checked={mode.cle === "personnalise"}
+						checked={mode.cle === "conseille"}
 						class="radio radio-primary radio-sm mt-0.5 shrink-0"
 					/>
 					<span>
@@ -42,7 +47,7 @@ const MODES = [
 		}
 	</div>
 
-	<div id="reglage-simultanes" class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+	<div id="reglage-simultanes" hidden class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
 		<label for="simultanes" class="text-sm text-muted">
 			Pages en même temps : <output id="valeur-simultanes" for="simultanes" class="font-serif text-base-content tabular-nums">1</output>
 		</label>

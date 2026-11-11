@@ -353,6 +353,10 @@ fn valider_et_lancer(brut: &str, corps: &Map<String, Value>) -> Response {
         return erreur(StatusCode::CONFLICT, "Cet audit n’est plus en attente de validation.");
     }
 
+    // Estimation de départ : la durée d'une page relevée sur les audits déjà faits sur ce poste.
+    let duree_page = store.duree_page_historique(reglages.simultanes).unwrap_or(DUREE_PAGE_ESTIMEE_MS as f64);
+    store.noter_duree_estimee(id, duree_page);
+
     lancer_audit(id);
     journal::info(&format!(
         "audit {id} : sélection validée ({} page(s), {nom_navigateur}, mode {}, {} simultanée(s)), audit lancé",
@@ -372,7 +376,7 @@ fn valider_et_lancer(brut: &str, corps: &Map<String, Value>) -> Response {
             "mode": reglages.mode,
             "simultanes": reglages.simultanes,
             // Estimation affichée avant le premier résultat mesuré.
-            "dureeEstimeeMs": pages.div_ceil(reglages.simultanes) * DUREE_PAGE_ESTIMEE_MS,
+            "dureeEstimeeMs": pages.div_ceil(reglages.simultanes) * duree_page.round() as u64,
         },
     )
 }

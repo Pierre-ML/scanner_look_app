@@ -281,12 +281,20 @@ pub fn calculer_progression(job: &Job) -> Progression {
     let restantes = total.saturating_sub(faites);
 
     let pourcent = if total > 0 { arrondi(faites as f64 / total as f64 * 100.0) } else { 0.0 };
-    let moyenne_ms = if durees.is_empty() {
-        DUREE_PAGE_ESTIMEE_MS as f64
-    } else {
-        durees.iter().sum::<f64>() / durees.len() as f64
+    // Durée d'une page : l'historique de la machine compte pour une page, puis les mesures de cet
+    // audit prennent le dessus au fil des résultats.
+    let somme: f64 = durees.iter().sum();
+    let moyenne_ms = match job.duree_page_estimee_ms {
+        Some(Nombre(depart)) if depart > 0.0 => (depart + somme) / (durees.len() + 1) as f64,
+        _ if durees.is_empty() => DUREE_PAGE_ESTIMEE_MS as f64,
+        _ => somme / durees.len() as f64,
     };
     let simultanes = job.simultanes.filter(|n| *n > 0).unwrap_or(1);
+    let ecoulees: Vec<f64> = job
+        .current_urls
+        .iter()
+        .map(|url| job.debuts.get(url).map_or(0.0, |debut| debut.elapsed().as_millis() as f64))
+        .collect();
 
     Progression {
         pourcent: Nombre(pourcent),
@@ -295,9 +303,32 @@ pub fn calculer_progression(job: &Job) -> Progression {
         restantes,
         moyenne_page_ms: Nombre(arrondi(moyenne_ms)),
         restant_ms: (job.status == "running")
-            .then(|| Nombre(arrondi((restantes as f64 / simultanes as f64).ceil() * moyenne_ms))),
+            .then(|| Nombre(arrondi(temps_restant(restantes, simultanes, moyenne_ms, &ecoulees)))),
         estimation_mesuree: !durees.is_empty(),
     }
+}
+
+// Temps restant : on rejoue la suite de l'audit. Chaque processus finit sa page en cours (durée
+// moyenne moins le temps déjà passé dessus), puis prend les pages non commencées une à une.
+fn temps_restant(restantes: u64, simultanes: u64, moyenne_ms: f64, ecoulees: &[f64]) -> f64 {
+    // Une page qui dépasse la moyenne est supposée proche de sa fin.
+    let mut libres: Vec<f64> = ecoulees
+        .iter()
+        .take(restantes as usize)
+        .map(|ecoule| (moyenne_ms - ecoule).max(moyenne_ms * 0.1))
+        .collect();
+    let a_commencer = restantes as usize - libres.len();
+    libres.resize((simultanes as usize).max(libres.len()), 0.0);
+
+    for _ in 0..a_commencer {
+        let (premier, _) = libres
+            .iter()
+            .enumerate()
+            .min_by(|a, b| a.1.total_cmp(b.1))
+            .expect("au moins un processus");
+        libres[premier] += moyenne_ms;
+    }
+    libres.into_iter().fold(0.0, f64::max)
 }
 
 #[cfg(test)]
@@ -357,5 +388,11 @@ mod tests {
         assert_eq!(p["estimationMesuree"], json!(true));
         job.status = "done".into();
         assert_eq!(serde_json::to_value(calculer_progression(&job)).unwrap()["restantMs"], json!(null));
+
+        // 5 pages restantes, 2 processus, 20 s par page : l'un a déjà passé 15 s sur la sienne.
+        assert_eq!(temps_restant(5, 2, 20_000.0, &[15_000.0, 0.0]), 45_000.0);
+        // Page en cours plus longue que la moyenne : il reste un dixième de la moyenne.
+        assert_eq!(temps_restant(1, 1, 20_000.0, &[90_000.0]), 2_000.0);
+        assert_eq!(temps_restant(3, 6, 20_000.0, &[]), 20_000.0);
     }
 }
