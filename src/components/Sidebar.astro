@@ -1,0 +1,41 @@
+---
+// Barre latérale : le lynx et le nom, navigation, mise à jour en bas.
+import Animal from "./Animal.astro";
+import Icone from "./Icone.astro";
+import UpdateButton from "./UpdateButton.astro";
+
+const { chemin = "/" } = Astro.props;
+
+const LIEN =
+	"group flex items-center gap-2 rounded-field px-2 py-1.5 text-[13px] text-muted transition-colors duration-200 hover:bg-white/5 hover:text-base-content aria-[current=page]:bg-white/5 aria-[current=page]:text-base-content";
+---
+
+<aside class="flex w-64 shrink-0 flex-col border-r border-base-300 bg-sidebar">
+	<a href="/" class="m-4 mb-2 flex h-9 items-center gap-2 px-1.5 text-base-content" aria-label="Eco Audit — accueil">
+		<Animal id="lynx" class="size-7 shrink-0" />
+		<span class="font-serif text-lg font-semibold tracking-tight">Eco Audit</span>
+	</a>
+
+	<nav class="min-h-0 flex-1 overflow-y-auto px-3 pt-2 pb-3" aria-label="Navigation principale">
+		<ul class="flex flex-col gap-0.5">
+			<li>
+				<a href="/" aria-current={chemin === "/" ? "page" : undefined} class={LIEN}>
+					<Icone nom="loupe" taille={16} classe="shrink-0" />
+					Accueil
+				</a>
+			</li>
+			<li>
+				<a href="/mes-audits" aria-current={chemin.startsWith("/mes-audits") ? "page" : undefined} class={LIEN}>
+					<Icone nom="document" taille={16} classe="shrink-0" />
+					Mes audits
+					{/* Rempli par le script du gabarit : le nombre vient du moteur d'audit. */}
+					<span data-compteur-audits hidden class="badge badge-sm ml-auto border-base-300 bg-base-300 text-base-content tabular-nums"></span>
+				</a>
+			</li>
+		</ul>
+	</nav>
+
+	<div class="flex shrink-0 flex-col gap-0.5 px-3 pt-1 pb-3">
+		<UpdateButton />
+	</div>
+</aside>

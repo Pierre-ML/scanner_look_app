@@ -2,8 +2,8 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "command": "npm run dev",
-      "name": "eco-audit (serveur + interface)",
+      "command": "npm run desktop:dev",
+      "name": "Eco Audit (logiciel en développement)",
       "request": "launch",
       "type": "node-terminal"
     }

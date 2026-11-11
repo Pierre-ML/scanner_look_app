@@ -1,0 +1,8 @@
+# Généré par Cargo
+/target/
+/gen/schemas
+
+# Ressources et sidecar préparés par scripts/build-desktop.mjs
+/binaries/
+/resources/app/
+/resources/mesure/

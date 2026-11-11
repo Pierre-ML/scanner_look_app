@@ -1,12 +1,15 @@
-# eco-audit
+# EcoAudit
 
-Auditez les pages d'un site **depuis votre machine** : scores Lighthouse bureau et mobile
-(performance, accessibilité, bonnes pratiques, référencement) et estimation de l'éco-index,
-page par page, avec un rapport qui se construit en direct.
+Logiciel de bureau Windows pour auditer les pages d'un site **depuis votre machine** : scores
+Lighthouse bureau et mobile (performance, accessibilité, bonnes pratiques, référencement) et
+estimation de l'éco-index, page par page, avec un rapport qui se construit en direct.
 
 Tout tourne en local, avec **votre** Chrome : rien n'est hébergé, aucune donnée ne quitte
 votre machine (hormis, bien sûr, les requêtes envoyées aux sites que vous auditez). Les
 mesures reflètent votre vrai processeur et votre vrai réseau, pas ceux d'un serveur distant.
+
+[Télécharger EcoAudit-Setup.exe](https://github.com/Pierre-ML/scanner_look_app/releases/latest/download/EcoAudit-Setup.exe)
+(dernière release ; `EcoAudit-Update.exe` sert à mettre à jour).
 
 ---
 
@@ -14,38 +17,22 @@ mesures reflètent votre vrai processeur et votre vrai réseau, pas ceux d'un se
 
 | | |
 | --- | --- |
-| **Système** | Windows 10 ou 11 |
-| **Node.js** | version **22.19 ou plus récente** ([nodejs.org](https://nodejs.org/), version LTS). Vérifiez avec `node -v`. |
+| **Système** | Windows 10 ou 11 (64 bits) |
 | **Navigateur** | **Google Chrome** installé normalement. À défaut, Microsoft Edge est utilisé. |
 
-Aucun Chromium n'est téléchargé : l'outil pilote le Chrome déjà présent sur votre poste.
+Aucun Chromium n'est téléchargé : l'outil pilote le Chrome déjà présent sur votre poste. Node.js
+est embarqué dans le logiciel : il n'est pas à installer.
 
-## Installation et lancement
+## Installation et mise à jour
 
-```sh
-git clone https://github.com/Pierre-ML/scanner_look_app.git
-cd scanner_look_app
-npm install
-npm run dev
-```
+1. Téléchargez `EcoAudit-Setup.exe` (lien ci-dessus) et lancez-le. EcoAudit s'installe pour votre
+   compte Windows, dans `%LOCALAPPDATA%\Programs\EcoAudit`, sans droits administrateur.
+2. Mise à jour : depuis l'application (vérification de la dernière release GitHub), ou en lançant
+   `EcoAudit-Update.exe`. Vos audits sont conservés.
+3. Désinstaller (Paramètres Windows) supprime aussi vos audits.
 
-Ouvrez ensuite **http://localhost:4321** dans votre navigateur.
-
-`npm run dev` démarre deux programmes dans le même terminal :
-
-- `[serveur]` : le serveur d'audit (Lighthouse), sur `127.0.0.1:4322`, jamais joignable depuis
-  le réseau ;
-- `[web]` : l'interface, sur `http://localhost:4321`.
-
-Au démarrage, le serveur indique le navigateur qu'il va utiliser :
-
-```
-[serveur] 10:39:55 INFO  Navigateur d'audit : Google Chrome (C:\Program Files\Google\Chrome\Application\chrome.exe)
-```
-
-Pour tout arrêter : **Ctrl+C** dans le terminal. Un audit en cours est arrêté proprement (les
-pages déjà mesurées sont gardées) et Chrome est fermé. Si Windows demande
-« Terminer le programme de commandes (O/N) ? », répondez `O`.
+> **Antivirus.** L'exécutable n'est pas signé : Windows SmartScreen ou certains antivirus peuvent
+> l'analyser ou afficher un avertissement. Le nom des fichiers ne change jamais d'une version à l'autre.
 
 ## Utilisation
 
@@ -102,25 +89,26 @@ machine risque de ralentir).
   ce temps, la performance mesurée peut baisser un peu. Chrome ajuste lui-même la priorité de
   quelques-uns de ses sous-processus.
 - Chaque page en parallèle a son propre processus et son propre Chrome ; tout est fermé à la
-  fin, à l'arrêt demandé et au Ctrl+C.
+  fin, à l'arrêt demandé et à la fermeture du logiciel.
 
 Un seul audit tourne à la fois : un audit utilise tout Chrome, et deux audits simultanés
 fausseraient leurs mesures.
 
 ### Vos audits
 
-- Chaque audit est enregistré dans `data/audits/<numéro>.json`, à la racine du dépôt (dossier
-  ignoré par git). Rien n'est supprimé automatiquement.
+- Chaque audit est enregistré dans `%APPDATA%\com.ecoaudit.desktop\audits\<numéro>.json`. Rien
+  n'est supprimé automatiquement.
 - La page **Mes audits** les liste tous et permet d'en supprimer.
 - Le bouton **Exporter le rapport (JSON)**, en bas de chaque rapport, télécharge le rapport
   complet : scores par page, moyennes, éco-index, durées.
 
 ## Aucune configuration
 
-L'outil est 100 % local et ne demande aucun fichier de configuration : l'interface est sur le
-port 4321, le serveur d'audit sur le port 4322. Chrome est trouvé automatiquement dans
-`%ProgramFiles%`, `%ProgramFiles(x86)%` puis `%LOCALAPPDATA%`, avec repli sur Microsoft Edge.
-La découverte propose au plus 500 pages ; chaque passage Lighthouse est limité à 3 minutes.
+Le logiciel est 100 % local et ne demande aucun réglage : l'interface est servie sur
+`127.0.0.1:4321` et l'API d'audit sur `127.0.0.1:4322`, jamais joignables depuis le réseau.
+Chrome est trouvé automatiquement dans `%ProgramFiles%`, `%ProgramFiles(x86)%` puis
+`%LOCALAPPDATA%`, avec repli sur Microsoft Edge. La découverte propose au plus 500 pages ;
+chaque passage Lighthouse est limité à 3 minutes.
 
 ## Pourquoi mes scores diffèrent de PageSpeed Insights ou de DevTools
 
@@ -128,9 +116,9 @@ C'est normal, et c'est en partie le but : Lighthouse est une mesure **de laborat
 dépend de la machine, du réseau et des réglages. Les principales sources d'écart :
 
 - **Le throttling (ralentissement simulé).**
-  - En **mobile**, eco-audit utilise la configuration par défaut de Lighthouse : téléphone
+  - En **mobile**, EcoAudit utilise la configuration par défaut de Lighthouse : téléphone
     moyen et 4G lente simulés. C'est aussi ce que fait PageSpeed Insights.
-  - En **bureau**, eco-audit ne simule rien : le score reflète votre processeur et votre
+  - En **bureau**, EcoAudit ne simule rien : le score reflète votre processeur et votre
     connexion. PageSpeed Insights simule une connexion et un processeur de bureau « moyens ».
     Sur une machine rapide avec une bonne connexion, attendez-vous à des scores de performance
     bureau **plus élevés** que sur PSI.
@@ -141,7 +129,7 @@ dépend de la machine, du réseau et des réglages. Les principales sources d'é
   La latence vers le site, le Wi-Fi, un VPN ou un antivirus qui inspecte le trafic changent
   les temps de chargement.
 - **Les extensions.** DevTools audite dans votre profil Chrome, extensions comprises (bloqueur
-  de publicité, gestionnaire de mots de passe…). eco-audit lance Chrome avec un **profil
+  de publicité, gestionnaire de mots de passe…). EcoAudit lance Chrome avec un **profil
   temporaire vierge** : ni extensions, ni cache, ni cookies. C'est plus proche de PSI, mais
   peut s'écarter de ce que vous voyez dans DevTools.
 - **La variabilité.** Deux passages successifs sur la même page donnent rarement le même score
@@ -150,7 +138,7 @@ dépend de la machine, du réseau et des réglages. Les principales sources d'é
 - **Les versions.** Lighthouse 13 et votre version de Chrome peuvent différer de celles de PSI
   à un instant donné.
 - **Données de terrain.** PSI affiche aussi, quand elles existent, les données réelles des
-  visiteurs (Chrome UX Report). eco-audit ne produit que des mesures de laboratoire.
+  visiteurs (Chrome UX Report). EcoAudit ne produit que des mesures de laboratoire.
 
 L'**éco-index** est une estimation calculée localement selon la méthodologie EcoIndex
 (GreenIT / CNUMR), à partir du nombre d'éléments du DOM, du nombre de requêtes et du poids
@@ -160,33 +148,23 @@ transféré lors du passage bureau. Ce n'est **pas** un résultat officiel d'eco
 
 ### « Aucun navigateur trouvé »
 
-Le serveur l'affiche au démarrage, et l'interface l'indique dans l'encart **État du service**
-de la page d'accueil.
+L'encart **État du service** de la page d'accueil l'indique.
 
-- Installez [Google Chrome](https://www.google.com/chrome/), puis relancez `npm run dev`.
+- Installez [Google Chrome](https://www.google.com/chrome/), puis relancez EcoAudit.
 - Chrome est installé à un emplacement inhabituel (version portable, Chrome Beta, Chromium) :
-  indiquez son chemin au lancement (PowerShell) :
+  définissez la variable d'environnement utilisateur `CHROME_PATH` (chemin de `chrome.exe`),
+  puis relancez EcoAudit.
+
+### Le logiciel ne démarre pas, ou une seule fenêtre s'ouvre
+
+- Une seule instance tourne à la fois : relancer EcoAudit ramène la fenêtre existante au premier plan.
+- Les ports 4321 et 4322 doivent être libres. Pour trouver le programme qui occupe un port
+  (PowerShell) :
   ```powershell
-  $env:CHROME_PATH = "D:\Apps\Chrome\chrome.exe"; npm run dev
+  Get-NetTCPConnection -LocalPort 4322 -State Listen | ForEach-Object { Get-Process -Id $_.OwningProcess }
   ```
-
-### Port déjà utilisé
-
-Dans les deux cas, les deux programmes s'arrêtent aussitôt, avec un message dans le terminal :
-
-- `[serveur] … Le port 4322 est déjà utilisé` : un autre programme occupe le port du serveur,
-  souvent une instance d'eco-audit restée ouverte dans un autre terminal. Fermez-la.
-- `[web] Port 4321 is already in use` : même chose pour l'interface.
-
-- `[web] Another astro dev server is already running` : eco-audit tourne déjà dans un autre
-  terminal (Astro n'accepte qu'une interface à la fois par projet). Utilisez celle-là, ou
-  fermez-la avec Ctrl+C avant de relancer `npm run dev`.
-
-Pour trouver le programme qui occupe un port (PowerShell) :
-
-```powershell
-Get-NetTCPConnection -LocalPort 4322 -State Listen | ForEach-Object { Get-Process -Id $_.OwningProcess }
-```
+- Les journaux de diagnostic (`session.log` et rapports de plantage) sont dans
+  `%LOCALAPPDATA%\com.ecoaudit.desktop\logs-crash`.
 
 ### Un audit reste bloqué ou échoue
 
@@ -195,14 +173,12 @@ Get-NetTCPConnection -LocalPort 4322 -State Listen | ForEach-Object { Get-Proces
 - Le bouton **Arrêter le scan** interrompt l'audit immédiatement.
 - Une page protégée (connexion obligatoire, pare-feu applicatif, anti-bot) peut échouer ou
   être mesurée sur sa page d'erreur : le message d'erreur s'affiche dans le détail par page.
-- « Serveur injoignable » dans l'interface : le serveur d'audit s'est arrêté. Regardez les
-  lignes `[serveur]` du terminal, puis relancez `npm run dev`.
 
 ### Des processus Chrome restent ouverts
 
 Ils ne devraient pas : Chrome est fermé à la fin de chaque audit, à l'arrêt demandé, au
-dépassement du délai et au Ctrl+C. Si le terminal a été fermé brutalement, vous pouvez
-vérifier (PowerShell) :
+dépassement du délai et à la fermeture du logiciel. Si EcoAudit a été tué brutalement, vous
+pouvez vérifier (PowerShell) :
 
 ```powershell
 Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" |
@@ -213,25 +189,46 @@ Ces processus utilisent un profil temporaire et peuvent être arrêtés sans ris
 Chrome habituel. Un audit interrompu par un arrêt brutal est marqué comme arrêté au démarrage
 suivant.
 
+## Développement
+
+Prérequis : Node.js 22.19 ou plus, Rust 1.90 ou plus (MSVC) avec les Visual Studio Build Tools.
+
+| Commande | Rôle |
+| --- | --- |
+| `npm install` | Installer les dépendances (interface et paquet de mesure) |
+| `npm run dev` | Interface seule (`astro dev`, http://localhost:4321), sans API d'audit |
+| `npm run desktop:dev` | Logiciel complet en dev (interface, API d'audit, fenêtre Tauri) |
+| `npm run desktop:build` | Produire `EcoAudit-Setup.exe` et `EcoAudit-Update.exe` (dans `src-tauri/target/release/bundle/release/`) |
+| `npm run version:set X.Y.Z` | Mettre à jour la version partout |
+
+### Publier une version
+
+1. `npm run version:set X.Y.Z` (met à jour `tauri.conf.json`, `package.json`, `package-lock.json` et `Cargo.toml`).
+2. Commit puis push sur `main` : le workflow GitHub (`.github/workflows/build.yml`) vérifie que les
+   versions concordent, construit sous Windows et publie la release `vX.Y.Z` avec les deux exe,
+   si ce tag n'existe pas encore.
+
 ## Organisation du dépôt
 
 ```
-web/       interface Astro 7 + Tailwind CSS 4 + daisyUI 5 (lancée par « astro dev »)
-server/    serveur Fastify 5 : routes JSON, découverte des pages, audits Lighthouse 13
-  src/lib/audit.js      passages Lighthouse bureau + mobile, arrêt forcé de Chrome
-  src/lib/chrome.js     détection de Chrome / Edge
-  src/lib/discover.js   sitemap, robots.txt, crawl des liens internes
-  src/lib/ecoindex.js   calcul de l'éco-index
-  src/lib/store.js      enregistrement des audits dans data/
-  src/lib/taches.js     découverte et audit en tâche de fond, un audit à la fois
-data/      audits enregistrés (créé au premier lancement, ignoré par git)
+src/          interface Astro 7 + Tailwind CSS 4 + daisyUI 5 (pages, composants, route /api qui relaie l'API d'audit)
+src-tauri/    coque Tauri 2 et backend Rust
+  src/audit/        API d'audit (127.0.0.1:4322), tâches de découverte et d'audit, un audit à la fois
+  src/decouverte.rs sitemap, robots.txt, crawl des liens internes
+  src/http.rs       client HTTP
+  src/updater.rs    mise à jour depuis GitHub
+  src/crashlog.rs   journaux de diagnostic
+  windows/          modèle d'installateur NSIS (setup et update)
+mesure/       processus Node de mesure Lighthouse (bureau + mobile), un par page en parallèle
+scripts/      build du bureau, des installateurs, gestion de la version
 ```
 
-`astro dev` relaie les appels `/api/*` de l'interface vers le serveur d'audit : le
-navigateur ne parle qu'à `localhost:4321`.
+L'application lance un serveur Astro autonome (Node embarqué) pour l'interface ; la route
+`/api` de l'interface relaie vers l'API d'audit du backend Rust, qui pilote les processus de
+mesure.
 
-Sous macOS ou Linux, l'outil n'a pas été testé : la détection automatique ne cherche que les
-emplacements Windows, mais `CHROME_PATH` permet d'indiquer le navigateur.
+Version : source unique dans `src-tauri/tauri.conf.json`, identique dans `package.json`,
+`package-lock.json` et `src-tauri/Cargo.toml`.
 
 ## Bon usage
 

@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissions minimales de la fenêtre principale (loader local + pages Astro)",
+  "windows": ["main"],
+  "remote": { "urls": ["http://localhost:4321", "http://127.0.0.1:4321"] },
+  "permissions": [
+    "core:default",
+    "allow-app-check-update",
+    "allow-app-install-update",
+    "allow-app-crash-logs",
+    "allow-app-open-crash-logs",
+    { "identifier": "opener:allow-open-url", "allow": [{ "url": "https://*" }, { "url": "http://*" }] }
+  ]
+}

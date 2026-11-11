@@ -14,7 +14,19 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# variables d'environnement (aucune n'est utilisée)
+.env
+.env.production
+
 # systèmes et éditeurs
 .DS_Store
 Thumbs.db
 .idea/
+
+# Tauri : compilation, sidecar node et ressources préparés par scripts/build-desktop.mjs
+src-tauri/target/
+src-tauri/target-coque/
+src-tauri/binaries/
+src-tauri/resources/app/
+src-tauri/resources/mesure/
+src-tauri/gen/schemas

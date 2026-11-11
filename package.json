@@ -1,26 +1,51 @@
 {
   "name": "eco-audit",
-  "version": "1.0.0",
-  "description": "Audit local de performance, d'accessibilité et d'éco-conception (Lighthouse bureau/mobile + estimation EcoIndex), avec votre propre Chrome",
-  "type": "module",
-  "private": true,
+  "description": "EcoAudit - audit local de performance, d'accessibilité et d'éco-conception (Lighthouse bureau/mobile + estimation EcoIndex), avec votre propre Chrome",
   "license": "MIT",
+  "author": "Pierre Mouilleseaux Lhuillier",
+  "keywords": [
+    "lighthouse",
+    "ecoindex",
+    "audit",
+    "local",
+    "astro",
+    "tauri"
+  ],
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
   "engines": {
     "node": ">=22.19"
   },
   "workspaces": [
-    "server",
-    "web"
+    "mesure"
   ],
   "scripts": {
-    "dev": "concurrently --kill-others --names serveur,web --prefix-colors green,cyan \"npm:dev:serveur\" \"npm:dev:web\"",
-    "dev:serveur": "npm run dev --workspace server",
-    "dev:web": "npm run dev --workspace web"
+    "dev": "astro dev",
+    "build": "astro build",
+    "version:set": "node scripts/set-version.mjs",
+    "preview": "astro preview",
+    "astro": "astro",
+    "build:desktop": "node scripts/build-desktop.mjs",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build && node scripts/build-updater.mjs && node scripts/name-installers.mjs",
+    "name:installers": "node scripts/name-installers.mjs",
+    "build:updater": "node scripts/build-updater.mjs"
   },
-  "devDependencies": {
-    "concurrently": "^10.0.5"
+  "dependencies": {
+    "@astrojs/node": "^11.1.7",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tauri-apps/api": "^2.12.1",
+    "@tauri-apps/plugin-opener": "^2.7.0",
+    "astro": "^7.3.7",
+    "tailwindcss": "^4.3.3"
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.1",
+    "daisyui": "^5.7.47"
   }
 }

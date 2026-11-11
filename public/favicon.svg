@@ -1,0 +1,29 @@
+<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="14" fill="#0b0b0c"/>
+  <g transform="translate(8 8.5) scale(0.75)">
+    <path d="M11 9L26 22L12 31Z" fill="#f2f2f3" fill-opacity="0.7"/>
+    <path d="M12 31L26 22L20 36Z" fill="#f2f2f3" fill-opacity="0.5"/>
+    <path d="M26 22L29 23L32 41L20 36Z" fill="#f2f2f3" fill-opacity="0.35"/>
+    <path d="M12 31L20 36L4 44Z" fill="#f2f2f3" fill-opacity="0.3"/>
+    <path d="M4 44L20 36L22 48Z" fill="#f2f2f3" fill-opacity="0.55"/>
+    <path d="M20 36L32 41L22 48Z" fill="#f2f2f3" fill-opacity="0.4"/>
+    <path d="M4 44L22 48L13 60Z" fill="#f2f2f3" fill-opacity="0.3"/>
+    <path d="M22 48L32 61L13 60Z" fill="#f2f2f3" fill-opacity="0.45"/>
+    <path d="M22 48L32 41L32 61Z" fill="#f2f2f3" fill-opacity="0.7"/>
+    <path d="M29 23L35 23L32 41Z" fill="#f2f2f3" fill-opacity="1"/>
+    <path d="M53 9L38 22L52 31Z" fill="#f2f2f3" fill-opacity="0.45"/>
+    <path d="M52 31L38 22L44 36Z" fill="#f2f2f3" fill-opacity="0.3"/>
+    <path d="M38 22L35 23L32 41L44 36Z" fill="#f2f2f3" fill-opacity="0.2"/>
+    <path d="M52 31L44 36L60 44Z" fill="#f2f2f3" fill-opacity="0.2"/>
+    <path d="M60 44L44 36L42 48Z" fill="#f2f2f3" fill-opacity="0.35"/>
+    <path d="M44 36L32 41L42 48Z" fill="#f2f2f3" fill-opacity="0.25"/>
+    <path d="M60 44L42 48L51 60Z" fill="#f2f2f3" fill-opacity="0.2"/>
+    <path d="M42 48L32 61L51 60Z" fill="#f2f2f3" fill-opacity="0.3"/>
+    <path d="M42 48L32 41L32 61Z" fill="#f2f2f3" fill-opacity="0.4"/>
+    <path d="M11 9L9 1L18 15Z" fill="#f2f2f3"/>
+    <path d="M53 9L55 1L46 15Z" fill="#f2f2f3"/>
+    <path d="M29.5 41.5L34.5 41.5L32 46Z" fill="#f2f2f3"/>
+    <circle cx="25" cy="32" r="1.8" fill="#f2f2f3"/>
+    <circle cx="39" cy="32" r="1.8" fill="#f2f2f3"/>
+  </g>
+</svg>

@@ -1,0 +1,122 @@
+---
+// Écran d'attente animé : lynx dont les facettes se dessinent en boucle, balayage de radar,
+// graduations, barre indéterminée, phase en cours et temps écoulé.
+import Animal from "./Animal.astro";
+
+const {
+	id,
+	titre = "Découverte des pages",
+	phases = [
+		"Connexion au site",
+		"Lecture du plan de site",
+		"Suivi des liens internes",
+		"Tri des pages trouvées",
+	],
+	plein = false,
+	classe = "",
+} = Astro.props;
+
+/** Graduations du HUD : elles s'allument l'une après l'autre, 110 ms d'écart. */
+const RETARDS_GRADUATIONS = [
+	"[--retard:0ms]",
+	"[--retard:110ms]",
+	"[--retard:220ms]",
+	"[--retard:330ms]",
+	"[--retard:440ms]",
+	"[--retard:550ms]",
+	"[--retard:660ms]",
+	"[--retard:770ms]",
+];
+---
+
+<div
+	id={id}
+	data-chargeur
+	data-phases={JSON.stringify(phases)}
+	hidden
+	class:list={[
+		plein
+			? "fixed inset-0 z-50 flex items-center justify-center bg-base-100/95 backdrop-blur-sm"
+			: "relative overflow-hidden rounded-box border border-base-300 bg-base-200",
+		classe,
+	]}
+>
+	<span class="font-mono text-micro tracking-[-0.02em] text-muted/25 select-none pointer-events-none absolute top-4 left-4">[ + ]</span>
+	<span class="font-mono text-micro tracking-[-0.02em] text-muted/25 select-none pointer-events-none absolute right-4 bottom-4">[ + ]</span>
+
+	<div class:list={["flex w-full max-w-md flex-col items-center px-6 text-center", plein ? "py-10" : "mx-auto py-12"]}>
+		{/* Radar + logo. */}
+		<div class="relative grid size-44 place-items-center" aria-hidden="true">
+			<span class="rounded-full border border-base-content/8 absolute inset-0"></span>
+			<span class="rounded-full border border-base-content/8 absolute inset-6"></span>
+			<span class="rounded-full border border-base-content/8 absolute inset-12"></span>
+			<span class="rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,rgb(242_242_243/0.12)_50deg,transparent_52deg)] animate-[spin_2.4s_linear_infinite] absolute inset-0"></span>
+			<Animal id="lynx" anime={true} class="relative w-28 text-base-content" />
+		</div>
+
+		<p class="text-micro tracking-hud uppercase text-muted mt-8">{titre}</p>
+
+		<p role="status" aria-live="polite" class="mt-2 min-h-7 font-serif text-lg tracking-wide text-base-content">
+			<span data-chargeur-phase>{phases[0]}</span><span aria-hidden="true" class="text-muted">…</span>
+		</p>
+
+		<div class="mt-6 flex w-full items-end justify-between gap-4">
+			<div class="flex items-center gap-1.5" aria-hidden="true">
+				{RETARDS_GRADUATIONS.map((retard) => (
+					<span class:list={["block h-1.5 w-4 rounded-[2px] bg-base-300 animate-graduation", retard]}></span>
+				))}
+			</div>
+			<p class="text-right">
+				<span class="text-micro tracking-hud uppercase text-muted block">Écoulé</span>
+				<span data-chargeur-ecoule class="tabular-nums font-serif text-2xl leading-none text-base-content">00:00</span>
+			</p>
+		</div>
+
+		<div class="relative h-1.5 overflow-hidden rounded-full border border-base-300/70 bg-base-200 after:absolute after:inset-0 after:w-2/5 after:rounded-[inherit] after:bg-[linear-gradient(90deg,transparent,var(--color-base-content))] after:animate-traversee mt-3 w-full" aria-hidden="true"></div>
+
+		<p class="mt-5 text-sm text-muted">
+			<slot>Cela prend en général quelques secondes.</slot>
+		</p>
+	</div>
+</div>
+
+<script>
+	// Anime chaque chargeur visible : phase suivante toutes les 2,4 s (sans boucler — la dernière
+	// phase reste affichée, revenir à « Connexion au site » laisserait croire à un redémarrage), et
+	// temps écoulé depuis son apparition.
+	for (const chargeur of document.querySelectorAll<HTMLElement>("[data-chargeur]")) {
+		const phases = JSON.parse(chargeur.dataset.phases || "[]");
+		const zonePhase = chargeur.querySelector("[data-chargeur-phase]");
+		const zoneEcoule = chargeur.querySelector("[data-chargeur-ecoule]");
+		let minuteur = null;
+
+		const demarrer = () => {
+			if (minuteur !== null) return;
+			const debut = Date.now();
+			let rang = 0;
+			if (zonePhase && phases[0]) zonePhase.textContent = phases[0];
+
+			minuteur = window.setInterval(() => {
+				const secondes = Math.floor((Date.now() - debut) / 1000);
+				if (zoneEcoule) {
+					zoneEcoule.textContent =
+						`${String(Math.floor(secondes / 60)).padStart(2, "0")}:${String(secondes % 60).padStart(2, "0")}`;
+				}
+				const cible = Math.min(phases.length - 1, Math.floor(secondes / 2.4));
+				if (cible !== rang && zonePhase) {
+					rang = cible;
+					zonePhase.textContent = phases[rang];
+				}
+			}, 250);
+		};
+
+		const arreter = () => {
+			if (minuteur !== null) window.clearInterval(minuteur);
+			minuteur = null;
+		};
+
+		const synchroniser = () => (chargeur.hidden ? arreter() : demarrer());
+		new MutationObserver(synchroniser).observe(chargeur, { attributes: true, attributeFilter: ["hidden"] });
+		synchroniser();
+	}
+</script>

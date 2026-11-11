@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/* daisyUI 5 : un seul thème, « lucania » (noir et gris, accent rouge réservé aux signaux). */
+@plugin "daisyui" {
+	themes: false;
+	exclude: rootscrollgutter;
+}
+
+@plugin "daisyui/theme" {
+	name: "lucania";
+	default: true;
+	prefersdark: true;
+	color-scheme: dark;
+
+	--color-base-100: #0b0b0c;
+	--color-base-200: #141416;
+	--color-base-300: #1f1f22;
+	--color-base-content: #f2f2f3;
+	--color-primary: #f2f2f3;
+	--color-primary-content: #0b0b0c;
+	--color-secondary: #26262a;
+	--color-secondary-content: #f2f2f3;
+	--color-accent: #e5383b;
+	--color-accent-content: #ffffff;
+	--color-neutral: #18181a;
+	--color-neutral-content: #f2f2f3;
+	--color-info: #60a5fa;
+	--color-info-content: #0b0b0c;
+	--color-success: #10b981;
+	--color-success-content: #0b0b0c;
+	--color-warning: #f59e0b;
+	--color-warning-content: #0b0b0c;
+	--color-error: #ff4d4f;
+	--color-error-content: #0b0b0c;
+
+	--radius-selector: 0.5rem;
+	--radius-field: 0.5rem;
+	--radius-box: 1rem;
+
+	--size-selector: 0.25rem;
+	--size-field: 0.25rem;
+
+	--border: 1px;
+
+	--depth: 0;
+	--noise: 0;
+}
+
+@theme {
+	/* Variables de l'univers Lucania, exposées en utilitaires (text-muted, bg-sidebar…). */
+	--color-muted: #8e8e94;
+	--color-sidebar: #070708;
+	--color-accent-hover: #f25c5f;
+
+	--font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+	--font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+	--text-nano: 0.625rem;
+	--text-micro: 0.6875rem;
+	--text-titre-page: clamp(2rem, 4vw, 3rem);
+
+	--tracking-hud: 0.2em;
+	--tracking-hud-large: 0.25em;
+
+	--ease-douce: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Animations : chacune devient un utilitaire `animate-*`. */
+@theme inline {
+	/* Montée en fondu au chargement : 1 ou 2 éléments clés par vue. */
+	--animate-apparition: apparition 700ms var(--ease-douce) var(--retard, 0ms) both;
+
+	/* Fenêtre qui s'ouvre. */
+	--animate-pop-in: pop-in 0.14s ease-out;
+
+	/* Facettes du lynx qui se dessinent en boucle (chargeur), cycle de 2,8 s. */
+	--animate-facet: facet 2.8s cubic-bezier(0.22, 1, 0.36, 1) var(--retard, 0ms) infinite both;
+
+	/* Chargeur : segment qui traverse la barre, graduations qui s'allument l'une après l'autre. */
+	--animate-traversee: traversee 1.6s var(--ease-douce) infinite;
+	--animate-graduation: graduation 1.8s ease-in-out var(--retard, 0ms) infinite;
+
+	/* Pastille d'état qui pulse (audit en cours). */
+	--animate-pulsation: pulsation 1.8s ease-out infinite;
+
+	@keyframes apparition {
+		from { opacity: 0; transform: translateY(12px); }
+		to   { opacity: 1; transform: none; }
+	}
+
+	@keyframes pop-in {
+		from { opacity: 0; transform: translateY(4px); }
+		to   { opacity: 1; transform: translateY(0); }
+	}
+
+	@keyframes facet {
+		0%        { opacity: 0; transform: translateY(3px); }
+		20%, 78%  { opacity: 1; transform: translateY(0); }
+		92%, 100% { opacity: 0; transform: translateY(0); }
+	}
+
+	@keyframes traversee {
+		from { transform: translateX(-110%); }
+		to   { transform: translateX(260%); }
+	}
+
+	@keyframes graduation {
+		0%, 100% { background: var(--color-base-300); box-shadow: none; }
+		30%      { background: var(--color-base-content); box-shadow: 0 0 10px rgb(242 242 243 / 0.5); }
+	}
+
+	@keyframes pulsation {
+		from { transform: scale(1); opacity: 0.7; }
+		to   { transform: scale(2.6); opacity: 0; }
+	}
+}

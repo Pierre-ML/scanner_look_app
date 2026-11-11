@@ -1,0 +1,37 @@
+---
+// Animal low-poly décoratif (SVG, rendu serveur). Facettes, yeux et accents en currentColor
+// (jamais de couleur : le rouge est réservé aux signaux). Props : id (voir src/lib/animals.js),
+// class, anime (les facettes se dessinent en boucle, pour les indicateurs de chargement).
+import { getAnimal } from "../lib/animals.js";
+
+const { id, class: classe = "", anime = false } = Astro.props;
+const animal = getAnimal(id);
+const trace = (points) => `M${points.map((p) => p.join(" ")).join("L")}Z`;
+
+/** Retards d'apparition, un par élément (répétés au-delà de douze). */
+const RETARDS = [
+	"[--retard:0ms]",
+	"[--retard:100ms]",
+	"[--retard:200ms]",
+	"[--retard:300ms]",
+	"[--retard:400ms]",
+	"[--retard:500ms]",
+	"[--retard:600ms]",
+	"[--retard:700ms]",
+	"[--retard:800ms]",
+	"[--retard:900ms]",
+	"[--retard:1000ms]",
+	"[--retard:1100ms]",
+];
+const ANIMATION = "animate-facet transform-fill motion-reduce:animate-none";
+const classeElement = (rang) => (anime ? `${ANIMATION} ${RETARDS[rang % RETARDS.length]}` : undefined);
+
+const decalageAccents = animal.facets.length;
+const decalageYeux = decalageAccents + (animal.accents ?? []).length;
+---
+
+<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" class={classe}>
+	{animal.facets.map((f, rang) => <path class={classeElement(rang)} d={trace(f.points)} fill="currentColor" fill-opacity={f.opacity} />)}
+	{(animal.accents ?? []).map((a, rang) => <path class={classeElement(decalageAccents + rang)} d={trace(a.points)} fill="currentColor" />)}
+	{animal.eyes.map((e, rang) => <circle class={classeElement(decalageYeux + rang)} cx={e.cx} cy={e.cy} r={e.r} fill="currentColor" />)}
+</svg>

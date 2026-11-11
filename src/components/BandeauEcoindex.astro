@@ -1,0 +1,20 @@
+---
+/** Mise en garde sur l'éco-index, affichée partout où un éco-index apparaît. */
+import Icone from "./Icone.astro";
+import { AVERTISSEMENT_ECOINDEX } from "../lib/identite.js";
+
+const { texte = AVERTISSEMENT_ECOINDEX, classe = "" } = Astro.props;
+---
+
+<div
+	role="note"
+	class={`flex gap-3 rounded-box border border-base-300 bg-base-200 p-4 ${classe}`}
+>
+	<Icone nom="alerte" taille={22} classe="mt-0.5 shrink-0 text-primary" />
+	<div class="space-y-1">
+		<p class="font-serif text-sm tracking-wide text-base-content">
+			L’éco-index affiché est une estimation locale
+		</p>
+		<p class="text-sm leading-relaxed text-muted">{texte}</p>
+	</div>
+</div>

@@ -1,0 +1,34 @@
+---
+// Carte de moyennes bureau ou mobile : les quatre catégories Lighthouse en jauges circulaires,
+// comme en tête d'un rapport Lighthouse.
+import Icone from "./Icone.astro";
+import JaugeScore from "./JaugeScore.astro";
+
+const { titre, icone, moyennes = null } = Astro.props;
+
+const CATEGORIES = [
+	{ cle: "performance", libelle: "Performance" },
+	{ cle: "accessibility", libelle: "Accessibilité" },
+	{ cle: "bestPractices", libelle: "Bonnes pratiques" },
+	{ cle: "seo", libelle: "Référencement" },
+];
+---
+
+<section class="rounded-box border border-base-300 bg-base-200 p-5 sm:p-6">
+	<h3 class="font-serif flex items-center gap-2.5 text-base">
+		<Icone nom={icone} taille={22} classe="text-primary" />
+		{titre}
+	</h3>
+
+	<div class="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-4">
+		{
+			CATEGORIES.map((categorie) => (
+				<JaugeScore
+					libelle={categorie.libelle}
+					cle={categorie.cle}
+					valeur={moyennes?.[categorie.cle] ?? null}
+				/>
+			))
+		}
+	</div>
+</section>

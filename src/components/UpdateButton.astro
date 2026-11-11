@@ -1,0 +1,32 @@
+---
+// Bouton de mise à jour de la barre latérale ; masqué tant que la page ne tourne pas dans Tauri.
+// Logique : src/lib/client/update.js.
+import Icone from "./Icone.astro";
+---
+
+<div id="update-wrap" class="relative hidden shrink-0">
+	<button
+		id="update-btn"
+		type="button"
+		data-available="false"
+		data-checking="false"
+		title="Rechercher une mise à jour"
+		class="group flex w-full cursor-pointer items-center gap-2 rounded-field px-2 py-1.5 text-left text-[13px] text-muted transition-colors duration-200 hover:bg-white/5 hover:text-base-content disabled:cursor-default"
+	>
+		<span class="relative flex size-4.5 shrink-0 items-center justify-center">
+			<Icone nom="refresh" taille={16} classe="group-data-[checking=true]:animate-spin motion-reduce:animate-none" />
+			<span aria-hidden="true" class="absolute -top-0.5 -right-0.5 hidden size-2 rounded-full bg-warning ring-2 ring-sidebar group-data-[available=true]:block"></span>
+		</span>
+		<span id="update-label" class="min-w-0 truncate">Rechercher une mise à jour</span>
+	</button>
+	<p id="update-note" role="status" aria-live="polite" hidden class="absolute bottom-full left-0 z-20 mb-2 w-max max-w-56 rounded-box border border-base-300 bg-base-200 px-3 py-2 text-xs leading-relaxed text-base-content shadow-[0_12px_32px_rgb(0_0_0/0.55)]"></p>
+	<div id="update-progress" hidden class="absolute bottom-full left-0 z-20 mb-2 w-56 rounded-box border border-base-300 bg-base-200 px-3 py-2 text-xs leading-relaxed text-base-content shadow-[0_12px_32px_rgb(0_0_0/0.55)]">
+		<p data-update-progress-text role="status" aria-live="polite"></p>
+		<progress data-update-progress-bar value="0" max="1" aria-label="Progression du téléchargement de la mise à jour" class="progress progress-primary mt-2 h-1 w-full"></progress>
+	</div>
+</div>
+
+<script>
+	import { initialiserMiseAJour } from "../lib/client/update.js";
+	initialiserMiseAJour();
+</script>

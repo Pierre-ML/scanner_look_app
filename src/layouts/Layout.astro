@@ -1,0 +1,85 @@
+---
+/** Gabarit unique : barre latérale à gauche, contenu défilant à droite. */
+import "../styles/global.css";
+import { SITE } from "../lib/identite.js";
+import Sidebar from "../components/Sidebar.astro";
+import Confirmation from "../components/Confirmation.astro";
+
+const {
+	titre,
+	description = SITE.description,
+	// Les pages de job (`/rapport`, `/decouverte`) affichent un état qui change en continu : on
+	// évite qu'elles soient remises en cache.
+	sansCache = false,
+	/** Largeur de page élargie (rapport, tableau de huit colonnes de scores). */
+	large = false,
+} = Astro.props;
+
+/** Chemin courant, pour signaler la page active dans la navigation (`aria-current`). */
+const chemin = Astro.url.pathname;
+
+const titreComplet = titre ? `${titre} — ${SITE.nom}` : SITE.titre;
+---
+
+<!doctype html>
+<html lang="fr" data-theme="lucania" class="scroll-smooth motion-reduce:scroll-auto">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="dark" />
+		<title>{titreComplet}</title>
+		<meta name="description" content={description} />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+		{
+			sansCache && (
+				<>
+					<meta http-equiv="cache-control" content="no-store, no-cache, must-revalidate" />
+					<meta http-equiv="pragma" content="no-cache" />
+					<meta http-equiv="expires" content="0" />
+					<meta name="robots" content="noindex, nofollow" />
+				</>
+			)
+		}
+	</head>
+
+	{/* Réglages valables pour toute l'interface, posés une fois ici : fenêtre de 900 px minimum. */}
+	<body
+		class="flex h-dvh min-w-225 overflow-hidden bg-base-100 text-base-content antialiased **:focus-visible:rounded-[0.25rem] **:focus-visible:outline-2 **:focus-visible:outline-offset-2 **:focus-visible:outline-accent motion-reduce:**:animate-none! motion-reduce:**:transition-none! motion-reduce:**:after:animate-none!"
+	>
+		{/* Lien d'évitement : premier élément focusable du document, avant toute navigation. */}
+		<a
+			href="#contenu"
+			class="btn btn-secondary btn-sm fixed top-2 left-2 z-100 -translate-y-[200%] transition-[translate] duration-150 ease-douce focus-visible:translate-y-0"
+			>Aller au contenu</a
+		>
+
+		<Sidebar chemin={chemin} />
+
+		{/* `tabindex="-1"` : l'ancre du lien d'évitement déplace aussi le focus. */}
+		<main id="contenu" tabindex="-1" class="min-w-0 flex-1 overflow-y-auto [scrollbar-color:var(--color-base-300)_transparent] [scrollbar-width:thin]">
+			<div class:list={["mx-auto w-full px-8 py-10", large ? "max-w-6xl" : "max-w-5xl"]}>
+				<slot />
+			</div>
+		</main>
+
+		<Confirmation />
+
+		<script>
+			/* Pastille « Mes audits » : le nombre d'audits enregistrés par le moteur d'audit. */
+			import { routes } from "../lib/api.js";
+
+			const pastille = document.querySelector<HTMLElement>("[data-compteur-audits]");
+			fetch(routes.historique(), { headers: { Accept: "application/json" }, cache: "no-store" })
+				.then((reponse) => (reponse.ok ? reponse.json() : null))
+				.then((corps) => {
+					const nombre = Array.isArray(corps?.jobs) ? corps.jobs.length : 0;
+					if (pastille && nombre > 0) {
+						pastille.textContent = String(nombre);
+						pastille.hidden = false;
+					}
+				})
+				.catch(() => {});
+		</script>
+	</body>
+</html>

@@ -1,0 +1,40 @@
+[package]
+name = "eco-audit"
+version = "1.0.0"
+description = "EcoAudit - audit local de performance, d'accessibilité et d'éco-conception (Lighthouse + EcoIndex)"
+authors = ["Pierre Mouilleseaux Lhuillier"]
+license = "MIT"
+repository = "https://github.com/Pierre-ML/scanner_look_app"
+edition = "2024"
+rust-version = "1.90"
+
+[lib]
+name = "eco_audit_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.1", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "2.12.1", features = [] }
+tauri-plugin-opener = "2"
+# Téléchargement de la mise à jour (GitHub) et analyse des pages (TLS rustls, sans OpenSSL).
+# Racines webpki ET magasin de certificats Windows : les antivirus qui analysent le HTTPS
+# présentent un certificat signé par leur propre autorité.
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "rustls-tls-native-roots", "stream", "json", "gzip"] }
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+tokio = { version = "1", features = ["sync", "time", "fs", "io-util", "macros", "net", "rt", "process"] }
+# API locale d'audit (127.0.0.1:4322), relayée par l'interface.
+axum = { version = "0.8", default-features = false, features = ["tokio", "http1", "json", "query"] }
+url = "2"
+# Découverte des pages : extraction des liens HTML et lecture des sitemaps XML.
+scraper = "0.23"
+quick-xml = "0.37"
+# Processus de mesure (Windows) : Job Object pour tuer Chrome avec eux, fenêtre console masquée,
+# priorité basse et mémoire libre.
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_SystemInformation", "Win32_System_Threading"] }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"

@@ -1,0 +1,57 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "EcoAudit",
+  "version": "1.0.0",
+  "identifier": "com.ecoaudit.desktop",
+  "build": {
+    "frontendDist": "../src-tauri/loader",
+    "devUrl": "http://localhost:4321",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build:desktop"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Eco Audit",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost http://127.0.0.1:4321; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "publisher": "Pierre Mouilleseaux Lhuillier",
+    "copyright": "© 2026 Pierre Mouilleseaux Lhuillier",
+    "shortDescription": "Audit local de performance, d'accessibilité et d'éco-conception",
+    "longDescription": "Audit local de performance, d'accessibilité et d'éco-conception : scores Lighthouse bureau et mobile, estimation EcoIndex, avec votre propre Chrome.",
+    "homepage": "https://github.com/Pierre-ML/scanner_look_app",
+    "targets": ["nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "externalBin": ["binaries/node"],
+    "resources": { "resources/app/": "app/", "resources/mesure/": "mesure/" },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "installerHooks": "./windows/hooks.nsh",
+        "template": "./windows/installer.nsi",
+        "languages": ["French", "English"]
+      }
+    }
+  }
+}
