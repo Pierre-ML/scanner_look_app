@@ -226,7 +226,7 @@ impl Membre {
         commande
             .arg(&script)
             .current_dir(dossier_mesure)
-            .env("ECO_AUDIT_CHROME", chrome)
+            .env("LUCA_AUDIT_CHROME", chrome)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());

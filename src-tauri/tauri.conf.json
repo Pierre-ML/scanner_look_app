@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "EcoAudit",
+  "productName": "Luca-Audit",
   "version": "1.0.1",
-  "identifier": "com.ecoaudit.desktop",
+  "identifier": "com.luca-audit.desktop",
   "build": {
     "frontendDist": "../src-tauri/loader",
     "devUrl": "http://localhost:4321",

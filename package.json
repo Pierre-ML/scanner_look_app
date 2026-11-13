@@ -1,6 +1,6 @@
 {
-  "name": "eco-audit",
-  "description": "EcoAudit - audit local de performance, d'accessibilité et d'éco-conception (Lighthouse bureau/mobile + estimation EcoIndex), avec votre propre Chrome",
+  "name": "luca-audit",
+  "description": "Luca-Audit - audit local de performance, d'accessibilité et d'éco-conception (Lighthouse bureau/mobile + estimation EcoIndex), avec votre propre Chrome",
   "license": "MIT",
   "author": "Pierre Mouilleseaux Lhuillier",
   "keywords": [

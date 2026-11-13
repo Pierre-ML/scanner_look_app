@@ -1,14 +1,14 @@
 // Donne aux installateurs un NOM FIXE, quelle que soit la version, après `tauri build` et build-updater.mjs.
 //
-//   EcoAudit_<version>_x64-setup.exe   ->  EcoAudit-Setup.exe
-//   EcoAudit_<version>_x64-update.exe  ->  EcoAudit-Update.exe
+//   Luca-Audit_<version>_x64-setup.exe   ->  Luca-Audit-Setup.exe
+//   Luca-Audit_<version>_x64-update.exe  ->  Luca-Audit-Update.exe
 //
 // Les copies vont dans un dossier dédié (target/release/bundle/release), vidé puis recréé à chaque fois :
 // c'est lui que le workflow GitHub publie. Nom stable = une seule exception antivirus et lien de
-// téléchargement direct stable (releases/latest/download/EcoAudit-Setup.exe).
+// téléchargement direct stable (releases/latest/download/Luca-Audit-Setup.exe).
 //
 // Variables d'environnement facultatives (le comportement par défaut ne change pas sans elles) :
-//   ECOAUDIT_BUNDLE_DIR  dossier contenant les exe versionnés (défaut : target/release/bundle/nsis)
+//   LUCAAUDIT_BUNDLE_DIR  dossier contenant les exe versionnés (défaut : target/release/bundle/nsis)
 //   CARGO_TARGET_DIR    dossier target de Cargo, s'il est absolu (défaut : src-tauri/target)
 import fs from 'node:fs';
 import path from 'node:path';
@@ -36,13 +36,13 @@ log(`${productName} ${version}`);
 const targetDir = process.env.CARGO_TARGET_DIR && path.isAbsolute(process.env.CARGO_TARGET_DIR)
   ? process.env.CARGO_TARGET_DIR
   : path.join(tauri, 'target');
-const bundleDir = path.resolve(process.env.ECOAUDIT_BUNDLE_DIR || path.join(targetDir, 'release', 'bundle', 'nsis'));
+const bundleDir = path.resolve(process.env.LUCAAUDIT_BUNDLE_DIR || path.join(targetDir, 'release', 'bundle', 'nsis'));
 const outDir = path.join(path.dirname(bundleDir), 'release');
 
 // 3. Fichiers source : les deux doivent exister
 const pairs = [
-  [`${productName}_${version}_x64-setup.exe`, 'EcoAudit-Setup.exe'],
-  [`${productName}_${version}_x64-update.exe`, 'EcoAudit-Update.exe'],
+  [`${productName}_${version}_x64-setup.exe`, 'Luca-Audit-Setup.exe'],
+  [`${productName}_${version}_x64-update.exe`, 'Luca-Audit-Update.exe'],
 ];
 const missing = pairs.map(([src]) => path.join(bundleDir, src)).filter((p) => !isFile(p));
 if (missing.length) {

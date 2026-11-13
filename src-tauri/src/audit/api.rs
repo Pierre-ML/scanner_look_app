@@ -485,7 +485,7 @@ async fn exporter(Path(brut): Path<String>) -> Response {
                 .unwrap_or_else(|| "site".into());
             let jour: String = job.created_at.as_deref().unwrap_or("").chars().take(10).collect();
             let suffixe = if jour.is_empty() { String::new() } else { format!("-{jour}") };
-            let nom = format!("attachment; filename=\"eco-audit-{}-{hote}{suffixe}.json\"", job.id);
+            let nom = format!("attachment; filename=\"luca-audit-{}-{hote}{suffixe}.json\"", job.id);
 
             let texte = match serde_json::to_string_pretty(&construire_rapport(job)) {
                 Ok(t) => t,

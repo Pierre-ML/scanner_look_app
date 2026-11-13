@@ -11,7 +11,7 @@ pub const DELAI_REQUETE: Duration = Duration::from_millis(15_000);
 
 /// User-Agent annoncé : identifiable, pour que les admins sachent qui crawle.
 pub const USER_AGENT: &str =
-    "eco-audit/1.0 (+https://github.com/Pierre-ML/scanner_look_app; audit eco-conception)";
+    "luca-audit/1.0 (+https://github.com/Pierre-ML/scanner_look_app; audit eco-conception)";
 
 /// Taille maximale d'un corps texte (un sitemap énorme ferait exploser la RAM).
 const OCTETS_MAX: usize = 10 * 1024 * 1024;

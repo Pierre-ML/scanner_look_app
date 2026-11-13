@@ -1,28 +1,28 @@
-; ECOAUDIT: template NSIS personnalisé (bundle.windows.nsis.template), basé sur le template officiel
-; ECOAUDIT: de tauri-bundler au tag tauri-cli-v2.12.1 (crates/tauri-bundler/src/bundle/windows/nsis/installer.nsi).
-; ECOAUDIT: chaque modification est marquée « ; ECOAUDIT: ». Ce template produit DEUX exe :
-; ECOAUDIT:  - SETUP (rendu par tauri build, sans define) : première installation UNIQUEMENT. Si EcoAudit est
-; ECOAUDIT:    déjà installé, message (utiliser l'exe de mise à jour) puis sortie dans .onInit.
-; ECOAUDIT:  - UPDATE (même rendu recompilé par scripts/build-updater.mjs avec /DECOAUDIT_UPDATER) : refuse si
-; ECOAUDIT:    EcoAudit n'est pas installé ou si une version plus récente l'est ; sinon installe par-dessus
-; ECOAUDIT:    l'installation existante (même dossier, pages Installation puis Fin seulement), ce qui répare
-; ECOAUDIT:    aussi une installation abîmée. Rien n'est désinstallé. Lancé par l'app (bouton « mise à
-; ECOAUDIT:    jour », src-tauri/src/updater.rs) avec /ECOAUDIT_WAITPID=<pid> : .onInit attend d'abord, sans
-; ECOAUDIT:    fenêtre, la fin de ce processus (15 s au plus). En mode graphique, la section Install relance
-; ECOAUDIT:    UNE fois la nouvelle version à la fin de la copie, puis l'update se ferme seul (page de fin
-; ECOAUDIT:    affichée seulement si ce lancement a échoué).
-; ECOAUDIT: Les données utilisateur (%APPDATA% et %LOCALAPPDATA%\${BUNDLEID}) ne sont JAMAIS touchées par
-; ECOAUDIT: l'un ou l'autre ; seule une vraie désinstallation les supprime (hook NSIS_HOOK_POSTUNINSTALL).
-; ECOAUDIT: Supprimés (code mort depuis ce découpage) : la page « déjà installé » (PageReinstall et la page
-; ECOAUDIT: EcoAudit à deux choix), la « mise à jour propre » (désinstallation de l'ancien programme, nettoyage
-; ECOAUDIT: manuel et ses garde-fous) et la migration depuis un ancien installateur WiX (EcoAudit n'a jamais
-; ECOAUDIT: été distribué en MSI : bundle.targets = nsis seulement).
-; ECOAUDIT: Mode d'installation : currentUser (bundle.windows.nsis.installMode) depuis la 0.1.12. Installation
-; ECOAUDIT: pour l'utilisateur courant dans %LOCALAPPDATA%\Programs\${PRODUCTNAME}, sans droits administrateur
-; ECOAUDIT: (RequestExecutionLevel user, SetShellVarContext current, SHCTX = HKCU) : l'antivirus (Norton)
-; ECOAUDIT: bloquait l'écriture des exe non signés dans Program Files. Une ancienne installation
-; ECOAUDIT: perMachine (Program Files, HKLM) est seulement signalée par le setup (EcoAuditDetectLegacyMachineInstall) :
-; ECOAUDIT: il n'a pas les droits pour y toucher et ne supprime rien.
+; LUCAAUDIT: template NSIS personnalisé (bundle.windows.nsis.template), basé sur le template officiel
+; LUCAAUDIT: de tauri-bundler au tag tauri-cli-v2.12.1 (crates/tauri-bundler/src/bundle/windows/nsis/installer.nsi).
+; LUCAAUDIT: chaque modification est marquée « ; LUCAAUDIT: ». Ce template produit DEUX exe :
+; LUCAAUDIT:  - SETUP (rendu par tauri build, sans define) : première installation UNIQUEMENT. Si Luca-Audit est
+; LUCAAUDIT:    déjà installé, message (utiliser l'exe de mise à jour) puis sortie dans .onInit.
+; LUCAAUDIT:  - UPDATE (même rendu recompilé par scripts/build-updater.mjs avec /DLUCAAUDIT_UPDATER) : refuse si
+; LUCAAUDIT:    Luca-Audit n'est pas installé ou si une version plus récente l'est ; sinon installe par-dessus
+; LUCAAUDIT:    l'installation existante (même dossier, pages Installation puis Fin seulement), ce qui répare
+; LUCAAUDIT:    aussi une installation abîmée. Rien n'est désinstallé. Lancé par l'app (bouton « mise à
+; LUCAAUDIT:    jour », src-tauri/src/updater.rs) avec /LUCAAUDIT_WAITPID=<pid> : .onInit attend d'abord, sans
+; LUCAAUDIT:    fenêtre, la fin de ce processus (15 s au plus). En mode graphique, la section Install relance
+; LUCAAUDIT:    UNE fois la nouvelle version à la fin de la copie, puis l'update se ferme seul (page de fin
+; LUCAAUDIT:    affichée seulement si ce lancement a échoué).
+; LUCAAUDIT: Les données utilisateur (%APPDATA% et %LOCALAPPDATA%\${BUNDLEID}) ne sont JAMAIS touchées par
+; LUCAAUDIT: l'un ou l'autre ; seule une vraie désinstallation les supprime (hook NSIS_HOOK_POSTUNINSTALL).
+; LUCAAUDIT: Supprimés (code mort depuis ce découpage) : la page « déjà installé » (PageReinstall et la page
+; LUCAAUDIT: Luca-Audit à deux choix), la « mise à jour propre » (désinstallation de l'ancien programme, nettoyage
+; LUCAAUDIT: manuel et ses garde-fous) et la migration depuis un ancien installateur WiX (Luca-Audit n'a jamais
+; LUCAAUDIT: été distribué en MSI : bundle.targets = nsis seulement).
+; LUCAAUDIT: Mode d'installation : currentUser (bundle.windows.nsis.installMode) depuis la 0.1.12. Installation
+; LUCAAUDIT: pour l'utilisateur courant dans %LOCALAPPDATA%\Programs\${PRODUCTNAME}, sans droits administrateur
+; LUCAAUDIT: (RequestExecutionLevel user, SetShellVarContext current, SHCTX = HKCU) : l'antivirus (Norton)
+; LUCAAUDIT: bloquait l'écriture des exe non signés dans Program Files. Une ancienne installation
+; LUCAAUDIT: perMachine (Program Files, HKLM) est seulement signalée par le setup (LucaAuditDetectLegacyMachineInstall) :
+; LUCAAUDIT: il n'a pas les droits pour y toucher et ne supprime rien.
 Unicode true
 ManifestDPIAware true
 ; Add in `dpiAwareness` `PerMonitorV2` to manifest for Windows 10 1607+ (note this should not affect lower versions since they should be able to ignore this and pick up `dpiAware` `true` set by `ManifestDPIAware true`)
@@ -54,8 +54,8 @@ ManifestDPIAwareness PerMonitorV2
 !include "Win\Propkey.nsh"
 !include "Win\RestartManager.nsh"
 !include "StrFunc.nsh"
-; ECOAUDIT: ${StrCase} et ${StrLoc} retirés : ils ne servaient qu'à la détection WiX (supprimée) ;
-; ECOAUDIT: les déclarer sans les utiliser provoque l'avertissement 6010 de makensis.
+; LUCAAUDIT: ${StrCase} et ${StrLoc} retirés : ils ne servaient qu'à la détection WiX (supprimée) ;
+; LUCAAUDIT: les déclarer sans les utiliser provoque l'avertissement 6010 de makensis.
 
 {{#if installer_hooks}}
 !include "{{installer_hooks}}"
@@ -79,11 +79,11 @@ ManifestDPIAwareness PerMonitorV2
 !define MAINBINARYSRCPATH "{{main_binary_path}}"
 !define BUNDLEID "{{bundle_id}}"
 !define COPYRIGHT "{{copyright}}"
-; ECOAUDIT: l'exe de mise à jour (/DECOAUDIT_UPDATER) est écrit dans le fichier passé par
-; ECOAUDIT: /DECOAUDIT_UPDATE_OUT=<chemin> (scripts/build-updater.mjs), sinon à côté du setup rendu.
-!ifdef ECOAUDIT_UPDATER
-  !ifdef ECOAUDIT_UPDATE_OUT
-    !define OUTFILE "${ECOAUDIT_UPDATE_OUT}"
+; LUCAAUDIT: l'exe de mise à jour (/DLUCAAUDIT_UPDATER) est écrit dans le fichier passé par
+; LUCAAUDIT: /DLUCAAUDIT_UPDATE_OUT=<chemin> (scripts/build-updater.mjs), sinon à côté du setup rendu.
+!ifdef LUCAAUDIT_UPDATER
+  !ifdef LUCAAUDIT_UPDATE_OUT
+    !define OUTFILE "${LUCAAUDIT_UPDATE_OUT}"
   !else
     !define OUTFILE "nsis-output-update.exe"
   !endif
@@ -109,28 +109,28 @@ ManifestDPIAwareness PerMonitorV2
 Var PassiveMode
 Var UpdateMode
 Var NoShortcutMode
-Var WixMode ; ECOAUDIT: toujours 0 (migration WiX supprimée, voir .onInit)
+Var WixMode ; LUCAAUDIT: toujours 0 (migration WiX supprimée, voir .onInit)
 Var OldMainBinaryName
-; ECOAUDIT: résultat de la détection d'une installation existante (EcoAuditDetectInstall, dans .onInit)
-Var EcoAuditInstalled         ; 1 si EcoAudit est déjà installé (registre ou dossier existant)
-Var EcoAuditInstalledVersion  ; version installée (DisplayVersion, vide si inconnue)
-Var EcoAuditInstalledDir      ; dossier d'installation existant (sans guillemets ni « \ » final)
-Var EcoAuditTmp               ; brouillon
-!ifndef ECOAUDIT_UPDATER
-; ECOAUDIT: setup : dossier d'une ancienne installation perMachine (vide si aucune), voir
-; ECOAUDIT: EcoAuditDetectLegacyMachineInstall. Déclarée seulement dans le setup (avertissement 6001 sinon).
-Var EcoAuditLegacyDir
+; LUCAAUDIT: résultat de la détection d'une installation existante (LucaAuditDetectInstall, dans .onInit)
+Var LucaAuditInstalled         ; 1 si Luca-Audit est déjà installé (registre ou dossier existant)
+Var LucaAuditInstalledVersion  ; version installée (DisplayVersion, vide si inconnue)
+Var LucaAuditInstalledDir      ; dossier d'installation existant (sans guillemets ni « \ » final)
+Var LucaAuditTmp               ; brouillon
+!ifndef LUCAAUDIT_UPDATER
+; LUCAAUDIT: setup : dossier d'une ancienne installation perMachine (vide si aucune), voir
+; LUCAAUDIT: LucaAuditDetectLegacyMachineInstall. Déclarée seulement dans le setup (avertissement 6001 sinon).
+Var LucaAuditLegacyDir
 !else
-; ECOAUDIT: update : 1 si la section Install a déjà lancé la nouvelle version (page de fin sautée)
-Var EcoAuditLaunched
+; LUCAAUDIT: update : 1 si la section Install a déjà lancé la nouvelle version (page de fin sautée)
+Var LucaAuditLaunched
 !endif
 
-; ECOAUDIT: lance l'app installée. installMode currentUser : l'installateur n'est pas élevé, Exec
-; ECOAUDIT: (CreateProcess direct) suffit. nsis_tauri_utils::RunAsUser (CreateProcessWithTokenW avec le
-; ECOAUDIT: jeton d'explorer, appel au service seclogon) ne sert qu'à quitter l'élévation : sur la page de
-; ECOAUDIT: fin, cet appel bloquait la fenêtre (« EcoAudit-Update.exe a cessé d'interagir », AppHangXProcB1)
-; ECOAUDIT: et laissait un ecoaudit.exe à moitié créé. Conservé pour les autres modes d'installation.
-!macro ECOAUDIT_RUN_APP
+; LUCAAUDIT: lance l'app installée. installMode currentUser : l'installateur n'est pas élevé, Exec
+; LUCAAUDIT: (CreateProcess direct) suffit. nsis_tauri_utils::RunAsUser (CreateProcessWithTokenW avec le
+; LUCAAUDIT: jeton d'explorer, appel au service seclogon) ne sert qu'à quitter l'élévation : sur la page de
+; LUCAAUDIT: fin, cet appel bloquait la fenêtre (« Luca-Audit-Update.exe a cessé d'interagir », AppHangXProcB1)
+; LUCAAUDIT: et laissait un luca-audit.exe à moitié créé. Conservé pour les autres modes d'installation.
+!macro LUCAAUDIT_RUN_APP
   !if "${INSTALLMODE}" == "currentUser"
     Exec '"$INSTDIR\${MAINBINARYNAME}.exe"'
   !else
@@ -138,36 +138,36 @@ Var EcoAuditLaunched
   !endif
 !macroend
 
-; ECOAUDIT: retire les guillemets de début et de fin d'un chemin lu dans le registre (ex. InstallLocation
-; ECOAUDIT: est écrit "%LOCALAPPDATA%\Programs\EcoAudit" développé, AVEC guillemets). VAR ne doit pas être $EcoAuditTmp.
-; ECOAUDIT: Défini ici (et non avec les autres fonctions ECOAUDIT) car utilisé dès RestorePreviousInstallLocation.
-!macro ECOAUDIT_UNQUOTE VAR
-  StrCpy $EcoAuditTmp ${VAR} 1
-  ${If} $EcoAuditTmp == "$\""
+; LUCAAUDIT: retire les guillemets de début et de fin d'un chemin lu dans le registre (ex. InstallLocation
+; LUCAAUDIT: est écrit "%LOCALAPPDATA%\Programs\Luca-Audit" développé, AVEC guillemets). VAR ne doit pas être $LucaAuditTmp.
+; LUCAAUDIT: Défini ici (et non avec les autres fonctions LUCAAUDIT) car utilisé dès RestorePreviousInstallLocation.
+!macro LUCAAUDIT_UNQUOTE VAR
+  StrCpy $LucaAuditTmp ${VAR} 1
+  ${If} $LucaAuditTmp == "$\""
     StrCpy ${VAR} ${VAR} "" 1
   ${EndIf}
-  StrCpy $EcoAuditTmp ${VAR} "" -1
-  ${If} $EcoAuditTmp == "$\""
+  StrCpy $LucaAuditTmp ${VAR} "" -1
+  ${If} $LucaAuditTmp == "$\""
     StrCpy ${VAR} ${VAR} -1
   ${EndIf}
 !macroend
 
-; ECOAUDIT: double lancement (.onInit) : cherche une fenêtre de premier niveau de classe « #32770 » dont
-; ECOAUDIT: le titre est exactement TITLE, ou TITLE suivi d'une espace (pages MUI2). $EcoAuditTmp reçoit
-; ECOAUDIT: le handle trouvé (0 sinon) ; ne cherche plus dès qu'une fenêtre a été trouvée.
-!macro ECOAUDIT_FIND_INSTALLER_WINDOW TITLE
-  ${If} $EcoAuditTmp = 0
-    FindWindow $EcoAuditTmp "#32770" "${TITLE}"
+; LUCAAUDIT: double lancement (.onInit) : cherche une fenêtre de premier niveau de classe « #32770 » dont
+; LUCAAUDIT: le titre est exactement TITLE, ou TITLE suivi d'une espace (pages MUI2). $LucaAuditTmp reçoit
+; LUCAAUDIT: le handle trouvé (0 sinon) ; ne cherche plus dès qu'une fenêtre a été trouvée.
+!macro LUCAAUDIT_FIND_INSTALLER_WINDOW TITLE
+  ${If} $LucaAuditTmp = 0
+    FindWindow $LucaAuditTmp "#32770" "${TITLE}"
   ${EndIf}
-  ${If} $EcoAuditTmp = 0
-    FindWindow $EcoAuditTmp "#32770" "${TITLE} "
+  ${If} $LucaAuditTmp = 0
+    FindWindow $LucaAuditTmp "#32770" "${TITLE} "
   ${EndIf}
 !macroend
 
-; ECOAUDIT: retire le « \ » final éventuel d'un chemin (VAR ne doit pas être $EcoAuditTmp)
-!macro ECOAUDIT_STRIP_TRAILING_SLASH VAR
-  StrCpy $EcoAuditTmp ${VAR} "" -1
-  ${If} $EcoAuditTmp == "\"
+; LUCAAUDIT: retire le « \ » final éventuel d'un chemin (VAR ne doit pas être $LucaAuditTmp)
+!macro LUCAAUDIT_STRIP_TRAILING_SLASH VAR
+  StrCpy $LucaAuditTmp ${VAR} "" -1
+  ${If} $LucaAuditTmp == "\"
     StrCpy ${VAR} ${VAR} -1
   ${EndIf}
 !macroend
@@ -175,9 +175,9 @@ Var EcoAuditLaunched
 Name "${PRODUCTNAME}"
 BrandingText "${COPYRIGHT}"
 OutFile "${OUTFILE}"
-; ECOAUDIT: titre de la fenêtre de l'exe de mise à jour (« Mise à jour de EcoAudit »)
-!ifdef ECOAUDIT_UPDATER
-  Caption "$(ecoauditUpdateTitle)"
+; LUCAAUDIT: titre de la fenêtre de l'exe de mise à jour (« Mise à jour de Luca-Audit »)
+!ifdef LUCAAUDIT_UPDATER
+  Caption "$(lucaauditUpdateTitle)"
 !endif
 
 ; We don't actually use this value as default install path,
@@ -265,12 +265,12 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
 !define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
 
 ; Installer pages, must be ordered as they appear
-; ECOAUDIT: SETUP : pages d'origine (Bienvenue, Licence, Dossier, Menu démarrer, Installation, Fin), toutes
-; ECOAUDIT: sur SkipIfPassive comme dans le template officiel : le setup ne tourne plus jamais sur une
-; ECOAUDIT: installation existante (refus dans .onInit).
-; ECOAUDIT: UPDATE (/DECOAUDIT_UPDATER) : seulement Installation puis Fin. Le dossier est imposé (celui de
-; ECOAUDIT: l'installation existante, fixé dans .onInit) et ne peut pas être changé.
-!ifndef ECOAUDIT_UPDATER
+; LUCAAUDIT: SETUP : pages d'origine (Bienvenue, Licence, Dossier, Menu démarrer, Installation, Fin), toutes
+; LUCAAUDIT: sur SkipIfPassive comme dans le template officiel : le setup ne tourne plus jamais sur une
+; LUCAAUDIT: installation existante (refus dans .onInit).
+; LUCAAUDIT: UPDATE (/DLUCAAUDIT_UPDATER) : seulement Installation puis Fin. Le dossier est imposé (celui de
+; LUCAAUDIT: l'installation existante, fixé dans .onInit) et ne peut pas être changé.
+!ifndef LUCAAUDIT_UPDATER
 ; 1. Welcome Page
 !define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
 !insertmacro MUI_PAGE_WELCOME
@@ -289,20 +289,20 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
 
 ; 4. Custom page to ask user if he wants to reinstall/uninstall
 ;    only if a previous installation was detected
-; ECOAUDIT: page supprimée : le setup refuse une installation existante dans .onInit,
-; ECOAUDIT: et l'update n'a aucune page de choix.
+; LUCAAUDIT: page supprimée : le setup refuse une installation existante dans .onInit,
+; LUCAAUDIT: et l'update n'a aucune page de choix.
 
 ; 5. Choose install directory page
 !define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
 !insertmacro MUI_PAGE_DIRECTORY
-!endif ; ECOAUDIT: fin des pages réservées au setup
+!endif ; LUCAAUDIT: fin des pages réservées au setup
 
 ; 6. Start menu shortcut page
-; ECOAUDIT: dans l'update, page déclarée mais toujours sautée (Skip) : les macros MUI_STARTMENU_*
-; ECOAUDIT: de la section Install et du désinstallateur en ont besoin (dossier par défaut).
+; LUCAAUDIT: dans l'update, page déclarée mais toujours sautée (Skip) : les macros MUI_STARTMENU_*
+; LUCAAUDIT: de la section Install et du désinstallateur en ont besoin (dossier par défaut).
 Var AppStartMenuFolder
 !if "${STARTMENUFOLDER}" != ""
-  !ifdef ECOAUDIT_UPDATER
+  !ifdef LUCAAUDIT_UPDATER
     !define MUI_PAGE_CUSTOMFUNCTION_PRE Skip
   !else
     !define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
@@ -314,12 +314,12 @@ Var AppStartMenuFolder
 !insertmacro MUI_PAGE_STARTMENU Application $AppStartMenuFolder
 
 ; 7. Installation page
-; ECOAUDIT: en-têtes adaptés dans l'update (pendant puis après la copie des fichiers)
-!ifdef ECOAUDIT_UPDATER
-  !define MUI_PAGE_HEADER_TEXT "$(ecoauditUpdateTitle)"
-  !define MUI_PAGE_HEADER_SUBTEXT "$(ecoauditUpdateSubtitle)"
-  !define MUI_INSTFILESPAGE_FINISHHEADER_TEXT "$(ecoauditUpdateDoneTitle)"
-  !define MUI_INSTFILESPAGE_FINISHHEADER_SUBTEXT "$(ecoauditUpdateDoneSubtitle)"
+; LUCAAUDIT: en-têtes adaptés dans l'update (pendant puis après la copie des fichiers)
+!ifdef LUCAAUDIT_UPDATER
+  !define MUI_PAGE_HEADER_TEXT "$(lucaauditUpdateTitle)"
+  !define MUI_PAGE_HEADER_SUBTEXT "$(lucaauditUpdateSubtitle)"
+  !define MUI_INSTFILESPAGE_FINISHHEADER_TEXT "$(lucaauditUpdateDoneTitle)"
+  !define MUI_INSTFILESPAGE_FINISHHEADER_SUBTEXT "$(lucaauditUpdateDoneSubtitle)"
 !endif
 !insertmacro MUI_PAGE_INSTFILES
 
@@ -328,78 +328,78 @@ Var AppStartMenuFolder
 ; Don't auto jump to finish page after installation page,
 ; because the installation page has useful info that can be used debug any issues with the installer.
 !define MUI_FINISHPAGE_NOAUTOCLOSE
-; ECOAUDIT: case « raccourci Bureau » seulement dans le setup. L'update n'en a pas (elle n'est pas créée
-; ECOAUDIT: du tout, plutôt que masquée) : un raccourci Bureau existant est mis à jour par la section
-; ECOAUDIT: Install (EcoAuditUpdateDesktopShortcut), et aucun n'est créé s'il n'existait pas.
-!ifndef ECOAUDIT_UPDATER
+; LUCAAUDIT: case « raccourci Bureau » seulement dans le setup. L'update n'en a pas (elle n'est pas créée
+; LUCAAUDIT: du tout, plutôt que masquée) : un raccourci Bureau existant est mis à jour par la section
+; LUCAAUDIT: Install (LucaAuditUpdateDesktopShortcut), et aucun n'est créé s'il n'existait pas.
+!ifndef LUCAAUDIT_UPDATER
 ; Use show readme button in the finish page as a button create a desktop shortcut
 !define MUI_FINISHPAGE_SHOWREADME
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "$(createDesktop)"
-; ECOAUDIT: fonction intermédiaire (au lieu de CreateOrUpdateDesktopShortcut) : ne fait rien si
-; ECOAUDIT: RunMainBinary a déjà créé le raccourci (voir $EcoAuditDesktopDone ci-dessous)
-!define MUI_FINISHPAGE_SHOWREADME_FUNCTION EcoAuditFinishDesktopShortcut
-; ECOAUDIT: 1 si le raccourci Bureau a déjà été créé par RunMainBinary sur la page de fin
-Var EcoAuditDesktopDone
+; LUCAAUDIT: fonction intermédiaire (au lieu de CreateOrUpdateDesktopShortcut) : ne fait rien si
+; LUCAAUDIT: RunMainBinary a déjà créé le raccourci (voir $LucaAuditDesktopDone ci-dessous)
+!define MUI_FINISHPAGE_SHOWREADME_FUNCTION LucaAuditFinishDesktopShortcut
+; LUCAAUDIT: 1 si le raccourci Bureau a déjà été créé par RunMainBinary sur la page de fin
+Var LucaAuditDesktopDone
 !else
-  !define MUI_FINISHPAGE_TITLE "$(ecoauditUpdateDoneTitle)"
-  !define MUI_FINISHPAGE_TEXT "$(ecoauditUpdateDoneText)"
+  !define MUI_FINISHPAGE_TITLE "$(lucaauditUpdateDoneTitle)"
+  !define MUI_FINISHPAGE_TEXT "$(lucaauditUpdateDoneText)"
 !endif
 ; Show run app after installation.
-; ECOAUDIT: case « Lancer » cochée par défaut dans les deux exe (pas de MUI_FINISHPAGE_RUN_NOTCHECKED).
-; ECOAUDIT: Setup : seul chemin de lancement en mode graphique. Update : la section Install lance déjà
-; ECOAUDIT: la nouvelle version et la page de fin est alors sautée (EcoAuditUpdateFinishPre) ; elle ne
-; ECOAUDIT: s'affiche, avec cette case, que si ce lancement a échoué. .onInstSuccess ne lance qu'en
-; ECOAUDIT: passif/silencieux avec /R.
+; LUCAAUDIT: case « Lancer » cochée par défaut dans les deux exe (pas de MUI_FINISHPAGE_RUN_NOTCHECKED).
+; LUCAAUDIT: Setup : seul chemin de lancement en mode graphique. Update : la section Install lance déjà
+; LUCAAUDIT: la nouvelle version et la page de fin est alors sautée (LucaAuditUpdateFinishPre) ; elle ne
+; LUCAAUDIT: s'affiche, avec cette case, que si ce lancement a échoué. .onInstSuccess ne lance qu'en
+; LUCAAUDIT: passif/silencieux avec /R.
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_FUNCTION RunMainBinary
-!ifdef ECOAUDIT_UPDATER
-  !define MUI_PAGE_CUSTOMFUNCTION_PRE EcoAuditUpdateFinishPre
+!ifdef LUCAAUDIT_UPDATER
+  !define MUI_PAGE_CUSTOMFUNCTION_PRE LucaAuditUpdateFinishPre
 !else
   !define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
 !endif
 !insertmacro MUI_PAGE_FINISH
 
-!ifdef ECOAUDIT_UPDATER
-; ECOAUDIT: page de fin de l'update sautée en passif (comme SkipIfPassive) ou si la nouvelle version a
-; ECOAUDIT: déjà été lancée par la section Install : l'update se termine alors sans clic.
-Function EcoAuditUpdateFinishPre
+!ifdef LUCAAUDIT_UPDATER
+; LUCAAUDIT: page de fin de l'update sautée en passif (comme SkipIfPassive) ou si la nouvelle version a
+; LUCAAUDIT: déjà été lancée par la section Install : l'update se termine alors sans clic.
+Function LucaAuditUpdateFinishPre
   Call SkipIfPassive ; Abort dans une fonction appelée : la page est quand même sautée
-  ${If} $EcoAuditLaunched = 1
+  ${If} $LucaAuditLaunched = 1
     Abort
   ${EndIf}
 FunctionEnd
 !endif
 
-; ECOAUDIT: ordre garanti « raccourci PUIS lancement ». Dans la fonction de sortie de la page de fin
-; ECOAUDIT: (Modern UI 2\Pages\Finish.nsh), MUI appelle MUI_FINISHPAGE_RUN_FUNCTION AVANT
-; ECOAUDIT: MUI_FINISHPAGE_SHOWREADME_FUNCTION : l'app était lancée avant la création du raccourci et
-; ECOAUDIT: plantait. Setup : si la case « raccourci Bureau » est cochée, RunMainBinary crée d'abord le
-; ECOAUDIT: raccourci, met $EcoAuditDesktopDone à 1 (EcoAuditFinishDesktopShortcut, appelée ensuite par MUI,
-; ECOAUDIT: ne refait rien), attend 300 ms, puis lance l'app. La fenêtre de la page existe encore ici
-; ECOAUDIT: (MUI lit lui-même l'état des cases à ce moment). Update : pas de case raccourci, lancement direct.
+; LUCAAUDIT: ordre garanti « raccourci PUIS lancement ». Dans la fonction de sortie de la page de fin
+; LUCAAUDIT: (Modern UI 2\Pages\Finish.nsh), MUI appelle MUI_FINISHPAGE_RUN_FUNCTION AVANT
+; LUCAAUDIT: MUI_FINISHPAGE_SHOWREADME_FUNCTION : l'app était lancée avant la création du raccourci et
+; LUCAAUDIT: plantait. Setup : si la case « raccourci Bureau » est cochée, RunMainBinary crée d'abord le
+; LUCAAUDIT: raccourci, met $LucaAuditDesktopDone à 1 (LucaAuditFinishDesktopShortcut, appelée ensuite par MUI,
+; LUCAAUDIT: ne refait rien), attend 300 ms, puis lance l'app. La fenêtre de la page existe encore ici
+; LUCAAUDIT: (MUI lit lui-même l'état des cases à ce moment). Update : pas de case raccourci, lancement direct.
 Function RunMainBinary
-  !ifndef ECOAUDIT_UPDATER
+  !ifndef LUCAAUDIT_UPDATER
     ${If} $mui.FinishPage.ShowReadme <> 0
-      SendMessage $mui.FinishPage.ShowReadme ${BM_GETCHECK} 0 0 $EcoAuditTmp
-      ${If} $EcoAuditTmp = ${BST_CHECKED}
+      SendMessage $mui.FinishPage.ShowReadme ${BM_GETCHECK} 0 0 $LucaAuditTmp
+      ${If} $LucaAuditTmp = ${BST_CHECKED}
         Call CreateOrUpdateDesktopShortcut
-        StrCpy $EcoAuditDesktopDone 1
+        StrCpy $LucaAuditDesktopDone 1
         Sleep 300
       ${EndIf}
     ${EndIf}
   !endif
-  !insertmacro ECOAUDIT_RUN_APP ; ECOAUDIT: au lieu de nsis_tauri_utils::RunAsUser (voir la macro)
+  !insertmacro LUCAAUDIT_RUN_APP ; LUCAAUDIT: au lieu de nsis_tauri_utils::RunAsUser (voir la macro)
 FunctionEnd
 
-!ifndef ECOAUDIT_UPDATER
-; ECOAUDIT: action de la case « raccourci Bureau » (appelée par MUI après RunMainBinary) : crée le
-; ECOAUDIT: raccourci, sauf s'il vient déjà d'être créé par RunMainBinary
-Function EcoAuditFinishDesktopShortcut
-  ${If} $EcoAuditDesktopDone = 1
+!ifndef LUCAAUDIT_UPDATER
+; LUCAAUDIT: action de la case « raccourci Bureau » (appelée par MUI après RunMainBinary) : crée le
+; LUCAAUDIT: raccourci, sauf s'il vient déjà d'être créé par RunMainBinary
+Function LucaAuditFinishDesktopShortcut
+  ${If} $LucaAuditDesktopDone = 1
     Return
   ${EndIf}
   Call CreateOrUpdateDesktopShortcut
-  StrCpy $EcoAuditDesktopDone 1
+  StrCpy $LucaAuditDesktopDone 1
 FunctionEnd
 !endif
 
@@ -457,93 +457,93 @@ FunctionEnd
   !include "{{this}}"
 {{/each}}
 
-; ECOAUDIT: textes EcoAudit (bundle.windows.nsis.languages = French, English ; langue choisie
-; ECOAUDIT: automatiquement selon celle de Windows). $EcoAuditInstalledVersion est remplacé à l'exécution
-; ECOAUDIT: par la version installée. Chaque texte n'est compilé que dans l'exe qui l'utilise.
+; LUCAAUDIT: textes Luca-Audit (bundle.windows.nsis.languages = French, English ; langue choisie
+; LUCAAUDIT: automatiquement selon celle de Windows). $LucaAuditInstalledVersion est remplacé à l'exécution
+; LUCAAUDIT: par la version installée. Chaque texte n'est compilé que dans l'exe qui l'utilise.
 !ifdef LANG_FRENCH
-; ECOAUDIT: double lancement (setup et update se détectent mutuellement, voir .onInit)
-LangString ecoauditSetupAlreadyRunning ${LANG_FRENCH} "Une installation ou une mise à jour de ${PRODUCTNAME} est déjà en cours."
-; ECOAUDIT: remplace les textes NSIS intégrés ^FileError (Abandonner/Recommencer/Ignorer) et
-; ECOAUDIT: ^FileError_NoIgnore (Recommencer/Annuler) affichés quand un fichier ne peut pas être écrit
-; ECOAUDIT: (antivirus qui bloque l'exe non signé). Un LangString défini dans le script a priorité sur le
-; ECOAUDIT: texte du fichier .nlf (vérifié avec makensis 3.11 : le texte d'origine disparaît de l'exe).
-; ECOAUDIT: Au moment du message, NSIS place le chemin complet du fichier dans $0 (même jeton que
-; ECOAUDIT: French.nlf / English.nlf). Communs au setup et à l'update.
+; LUCAAUDIT: double lancement (setup et update se détectent mutuellement, voir .onInit)
+LangString lucaauditSetupAlreadyRunning ${LANG_FRENCH} "Une installation ou une mise à jour de ${PRODUCTNAME} est déjà en cours."
+; LUCAAUDIT: remplace les textes NSIS intégrés ^FileError (Abandonner/Recommencer/Ignorer) et
+; LUCAAUDIT: ^FileError_NoIgnore (Recommencer/Annuler) affichés quand un fichier ne peut pas être écrit
+; LUCAAUDIT: (antivirus qui bloque l'exe non signé). Un LangString défini dans le script a priorité sur le
+; LUCAAUDIT: texte du fichier .nlf (vérifié avec makensis 3.11 : le texte d'origine disparaît de l'exe).
+; LUCAAUDIT: Au moment du message, NSIS place le chemin complet du fichier dans $0 (même jeton que
+; LUCAAUDIT: French.nlf / English.nlf). Communs au setup et à l'update.
 LangString ^FileError ${LANG_FRENCH} "Impossible d'écrire le fichier :$\r$\n$\r$\n$0$\r$\n$\r$\nVotre antivirus bloque probablement l'installation de ${PRODUCTNAME} (le programme n'est pas encore signé). Ajoutez une exception pour ce programme d'installation et pour le dossier $INSTDIR, puis cliquez sur Recommencer.$\r$\n$\r$\nAbandonner annule l'installation. Ignorer passe ce fichier : ${PRODUCTNAME} serait alors incomplet."
 LangString ^FileError_NoIgnore ${LANG_FRENCH} "Impossible d'écrire le fichier :$\r$\n$\r$\n$0$\r$\n$\r$\nVotre antivirus bloque probablement l'installation de ${PRODUCTNAME} (le programme n'est pas encore signé). Ajoutez une exception pour ce programme d'installation et pour le dossier $INSTDIR, puis cliquez sur Recommencer.$\r$\n$\r$\nAnnuler arrête l'installation."
-!ifndef ECOAUDIT_UPDATER
-; ECOAUDIT: setup lancé alors que EcoAudit est déjà installé
-LangString ecoauditAlreadyInstalledUseUpdate ${LANG_FRENCH} "${PRODUCTNAME} est déjà installé sur cet ordinateur.$\r$\n$\r$\nPour le mettre à jour, utilisez le fichier EcoAudit-Update.exe (disponible sur la page des versions, à côté de ce programme d'installation)."
-; ECOAUDIT: setup : ancienne installation « pour tous les utilisateurs » (Program Files) trouvée ; information
-; ECOAUDIT: seulement, l'installation continue. $EcoAuditLegacyDir = dossier trouvé. On ne conseille PAS la
-; ECOAUDIT: désinstallation par Paramètres > Applications : les anciens désinstallateurs (perMachine)
-; ECOAUDIT: suppriment %APPDATA%\${BUNDLEID}, donc les audits, partagées avec la nouvelle installation.
-LangString ecoauditLegacyMachineInstall ${LANG_FRENCH} "Une ancienne installation de ${PRODUCTNAME} pour tous les utilisateurs a été trouvée dans :$\r$\n$\r$\n$EcoAuditLegacyDir$\r$\n$\r$\nElle n'est plus utilisée : ${PRODUCTNAME} va maintenant être installé pour votre compte uniquement. Vos audits et vos réglages sont conservés.$\r$\n$\r$\nPour retirer l'ancienne version, supprimez ce dossier (Windows demandera une autorisation administrateur). Ne la désinstallez pas depuis Paramètres > Applications : son ancien programme de désinstallation effacerait aussi vos audits."
+!ifndef LUCAAUDIT_UPDATER
+; LUCAAUDIT: setup lancé alors que Luca-Audit est déjà installé
+LangString lucaauditAlreadyInstalledUseUpdate ${LANG_FRENCH} "${PRODUCTNAME} est déjà installé sur cet ordinateur.$\r$\n$\r$\nPour le mettre à jour, utilisez le fichier Luca-Audit-Update.exe (disponible sur la page des versions, à côté de ce programme d'installation)."
+; LUCAAUDIT: setup : ancienne installation « pour tous les utilisateurs » (Program Files) trouvée ; information
+; LUCAAUDIT: seulement, l'installation continue. $LucaAuditLegacyDir = dossier trouvé. On ne conseille PAS la
+; LUCAAUDIT: désinstallation par Paramètres > Applications : les anciens désinstallateurs (perMachine)
+; LUCAAUDIT: suppriment %APPDATA%\${BUNDLEID}, donc les audits, partagées avec la nouvelle installation.
+LangString lucaauditLegacyMachineInstall ${LANG_FRENCH} "Une ancienne installation de ${PRODUCTNAME} pour tous les utilisateurs a été trouvée dans :$\r$\n$\r$\n$LucaAuditLegacyDir$\r$\n$\r$\nElle n'est plus utilisée : ${PRODUCTNAME} va maintenant être installé pour votre compte uniquement. Vos audits et vos réglages sont conservés.$\r$\n$\r$\nPour retirer l'ancienne version, supprimez ce dossier (Windows demandera une autorisation administrateur). Ne la désinstallez pas depuis Paramètres > Applications : son ancien programme de désinstallation effacerait aussi vos audits."
 !else
-; ECOAUDIT: update : refus (pas installé, version plus récente), titres des pages
-LangString ecoauditNotInstalledUseSetup ${LANG_FRENCH} "${PRODUCTNAME} n'est pas installé sur cet ordinateur.$\r$\n$\r$\nUtilisez d'abord le programme d'installation EcoAudit-Setup.exe (disponible sur la page des versions).$\r$\n$\r$\nSi une ancienne version est installée pour tous les utilisateurs (dans Program Files), lancez une fois EcoAudit-Setup.exe : il installe ${PRODUCTNAME} à son nouvel emplacement, pour votre compte, en conservant vos audits."
-LangString ecoauditNewerInstalled ${LANG_FRENCH} "Une version plus récente de ${PRODUCTNAME} ($EcoAuditInstalledVersion) est déjà installée.$\r$\n$\r$\nCette mise à jour (version ${VERSION}) n'est pas nécessaire."
-LangString ecoauditUpdateTitle ${LANG_FRENCH} "Mise à jour de ${PRODUCTNAME}"
-LangString ecoauditUpdateSubtitle ${LANG_FRENCH} "Installation de la version ${VERSION}. Vos audits et vos réglages sont conservés."
-LangString ecoauditUpdateDoneTitle ${LANG_FRENCH} "Mise à jour terminée"
-LangString ecoauditUpdateDoneSubtitle ${LANG_FRENCH} "${PRODUCTNAME} est à jour (version ${VERSION})."
-LangString ecoauditUpdateDoneText ${LANG_FRENCH} "${PRODUCTNAME} a été mis à jour vers la version ${VERSION}. Vos audits et vos réglages ont été conservés.$\r$\n$\r$\nCliquez sur Fermer pour quitter."
-; ECOAUDIT: ligne du journal pendant le lancement de la nouvelle version (section Install)
-LangString ecoauditUpdateLaunching ${LANG_FRENCH} "Démarrage de ${PRODUCTNAME} ${VERSION}..."
+; LUCAAUDIT: update : refus (pas installé, version plus récente), titres des pages
+LangString lucaauditNotInstalledUseSetup ${LANG_FRENCH} "${PRODUCTNAME} n'est pas installé sur cet ordinateur.$\r$\n$\r$\nUtilisez d'abord le programme d'installation Luca-Audit-Setup.exe (disponible sur la page des versions).$\r$\n$\r$\nSi une ancienne version est installée pour tous les utilisateurs (dans Program Files), lancez une fois Luca-Audit-Setup.exe : il installe ${PRODUCTNAME} à son nouvel emplacement, pour votre compte, en conservant vos audits."
+LangString lucaauditNewerInstalled ${LANG_FRENCH} "Une version plus récente de ${PRODUCTNAME} ($LucaAuditInstalledVersion) est déjà installée.$\r$\n$\r$\nCette mise à jour (version ${VERSION}) n'est pas nécessaire."
+LangString lucaauditUpdateTitle ${LANG_FRENCH} "Mise à jour de ${PRODUCTNAME}"
+LangString lucaauditUpdateSubtitle ${LANG_FRENCH} "Installation de la version ${VERSION}. Vos audits et vos réglages sont conservés."
+LangString lucaauditUpdateDoneTitle ${LANG_FRENCH} "Mise à jour terminée"
+LangString lucaauditUpdateDoneSubtitle ${LANG_FRENCH} "${PRODUCTNAME} est à jour (version ${VERSION})."
+LangString lucaauditUpdateDoneText ${LANG_FRENCH} "${PRODUCTNAME} a été mis à jour vers la version ${VERSION}. Vos audits et vos réglages ont été conservés.$\r$\n$\r$\nCliquez sur Fermer pour quitter."
+; LUCAAUDIT: ligne du journal pendant le lancement de la nouvelle version (section Install)
+LangString lucaauditUpdateLaunching ${LANG_FRENCH} "Démarrage de ${PRODUCTNAME} ${VERSION}..."
 !endif
 !endif
 
 !ifdef LANG_ENGLISH
-; ECOAUDIT: double lancement (setup et update se détectent mutuellement, voir .onInit)
-LangString ecoauditSetupAlreadyRunning ${LANG_ENGLISH} "An installation or update of ${PRODUCTNAME} is already running."
-; ECOAUDIT: message d'écriture impossible (voir le bloc français ci-dessus)
+; LUCAAUDIT: double lancement (setup et update se détectent mutuellement, voir .onInit)
+LangString lucaauditSetupAlreadyRunning ${LANG_ENGLISH} "An installation or update of ${PRODUCTNAME} is already running."
+; LUCAAUDIT: message d'écriture impossible (voir le bloc français ci-dessus)
 LangString ^FileError ${LANG_ENGLISH} "Unable to write the file:$\r$\n$\r$\n$0$\r$\n$\r$\nYour antivirus is probably blocking the installation of ${PRODUCTNAME} (the program is not signed yet). Add an exception for this installer and for the folder $INSTDIR, then click Retry.$\r$\n$\r$\nAbort cancels the installation. Ignore skips this file: ${PRODUCTNAME} would then be incomplete."
 LangString ^FileError_NoIgnore ${LANG_ENGLISH} "Unable to write the file:$\r$\n$\r$\n$0$\r$\n$\r$\nYour antivirus is probably blocking the installation of ${PRODUCTNAME} (the program is not signed yet). Add an exception for this installer and for the folder $INSTDIR, then click Retry.$\r$\n$\r$\nCancel stops the installation."
-!ifndef ECOAUDIT_UPDATER
-; ECOAUDIT: setup lancé alors que EcoAudit est déjà installé
-LangString ecoauditAlreadyInstalledUseUpdate ${LANG_ENGLISH} "${PRODUCTNAME} is already installed on this computer.$\r$\n$\r$\nTo update it, use the file EcoAudit-Update.exe (available on the releases page, next to this installer)."
-; ECOAUDIT: setup : ancienne installation pour tous les utilisateurs (voir le bloc français ci-dessus)
-LangString ecoauditLegacyMachineInstall ${LANG_ENGLISH} "An old installation of ${PRODUCTNAME} for all users was found in:$\r$\n$\r$\n$EcoAuditLegacyDir$\r$\n$\r$\nIt is no longer used: ${PRODUCTNAME} will now be installed for your account only. Your audits and settings are kept.$\r$\n$\r$\nTo remove the old version, delete this folder (Windows will ask for administrator permission). Do not uninstall it from Settings > Apps: its old uninstaller would also erase your audits."
+!ifndef LUCAAUDIT_UPDATER
+; LUCAAUDIT: setup lancé alors que Luca-Audit est déjà installé
+LangString lucaauditAlreadyInstalledUseUpdate ${LANG_ENGLISH} "${PRODUCTNAME} is already installed on this computer.$\r$\n$\r$\nTo update it, use the file Luca-Audit-Update.exe (available on the releases page, next to this installer)."
+; LUCAAUDIT: setup : ancienne installation pour tous les utilisateurs (voir le bloc français ci-dessus)
+LangString lucaauditLegacyMachineInstall ${LANG_ENGLISH} "An old installation of ${PRODUCTNAME} for all users was found in:$\r$\n$\r$\n$LucaAuditLegacyDir$\r$\n$\r$\nIt is no longer used: ${PRODUCTNAME} will now be installed for your account only. Your audits and settings are kept.$\r$\n$\r$\nTo remove the old version, delete this folder (Windows will ask for administrator permission). Do not uninstall it from Settings > Apps: its old uninstaller would also erase your audits."
 !else
-; ECOAUDIT: update : refus (pas installé, version plus récente), titres des pages
-LangString ecoauditNotInstalledUseSetup ${LANG_ENGLISH} "${PRODUCTNAME} is not installed on this computer.$\r$\n$\r$\nPlease use the installer EcoAudit-Setup.exe first (available on the releases page).$\r$\n$\r$\nIf an old version is installed for all users (in Program Files), run EcoAudit-Setup.exe once: it installs ${PRODUCTNAME} in its new location, for your account, and keeps your audits."
-LangString ecoauditNewerInstalled ${LANG_ENGLISH} "A newer version of ${PRODUCTNAME} ($EcoAuditInstalledVersion) is already installed.$\r$\n$\r$\nThis update (version ${VERSION}) is not needed."
-LangString ecoauditUpdateTitle ${LANG_ENGLISH} "${PRODUCTNAME} Update"
-LangString ecoauditUpdateSubtitle ${LANG_ENGLISH} "Installing version ${VERSION}. Your audits and settings are kept."
-LangString ecoauditUpdateDoneTitle ${LANG_ENGLISH} "Update complete"
-LangString ecoauditUpdateDoneSubtitle ${LANG_ENGLISH} "${PRODUCTNAME} is up to date (version ${VERSION})."
-LangString ecoauditUpdateDoneText ${LANG_ENGLISH} "${PRODUCTNAME} has been updated to version ${VERSION}. Your audits and settings have been kept.$\r$\n$\r$\nClick Close to exit."
-LangString ecoauditUpdateLaunching ${LANG_ENGLISH} "Starting ${PRODUCTNAME} ${VERSION}..."
+; LUCAAUDIT: update : refus (pas installé, version plus récente), titres des pages
+LangString lucaauditNotInstalledUseSetup ${LANG_ENGLISH} "${PRODUCTNAME} is not installed on this computer.$\r$\n$\r$\nPlease use the installer Luca-Audit-Setup.exe first (available on the releases page).$\r$\n$\r$\nIf an old version is installed for all users (in Program Files), run Luca-Audit-Setup.exe once: it installs ${PRODUCTNAME} in its new location, for your account, and keeps your audits."
+LangString lucaauditNewerInstalled ${LANG_ENGLISH} "A newer version of ${PRODUCTNAME} ($LucaAuditInstalledVersion) is already installed.$\r$\n$\r$\nThis update (version ${VERSION}) is not needed."
+LangString lucaauditUpdateTitle ${LANG_ENGLISH} "${PRODUCTNAME} Update"
+LangString lucaauditUpdateSubtitle ${LANG_ENGLISH} "Installing version ${VERSION}. Your audits and settings are kept."
+LangString lucaauditUpdateDoneTitle ${LANG_ENGLISH} "Update complete"
+LangString lucaauditUpdateDoneSubtitle ${LANG_ENGLISH} "${PRODUCTNAME} is up to date (version ${VERSION})."
+LangString lucaauditUpdateDoneText ${LANG_ENGLISH} "${PRODUCTNAME} has been updated to version ${VERSION}. Your audits and settings have been kept.$\r$\n$\r$\nClick Close to exit."
+LangString lucaauditUpdateLaunching ${LANG_ENGLISH} "Starting ${PRODUCTNAME} ${VERSION}..."
 !endif
 !endif
 
 Function .onInit
-  ; ECOAUDIT: un seul setup OU update à la fois, détection « au mieux » SANS appel système : l'ancien
-  ; ECOAUDIT: mutex nommé « Global\... » (créé par un appel système via le plugin System) a été retiré, car Norton le
-  ; ECOAUDIT: classait comme comportement suspect (IDP.Generic) dans un exe élevé non signé.
-  ; ECOAUDIT: Instruction NSIS native FindWindow (pas de plugin) : la fenêtre principale d'un installateur
-  ; ECOAUDIT: NSIS est une boîte de dialogue de premier niveau de classe « #32770 », dont le titre est la
-  ; ECOAUDIT: Caption de l'exe, suivie d'une espace sur les pages MUI2 (Caption " " de page) et sans
-  ; ECOAUDIT: espace sur la page Bienvenue. Titres testés (titre exact, avec et sans espace finale) :
-  ; ECOAUDIT:   setup  : « Installation de EcoAudit » (French.nlf ^SetupCaption), « EcoAudit Setup » (English.nlf)
-  ; ECOAUDIT:   update : « Mise à jour de EcoAudit », « EcoAudit Update » (LangString ecoauditUpdateTitle)
-  ; ECOAUDIT: Le setup et l'update se détectent donc mutuellement, quelle que soit la langue. Le
-  ; ECOAUDIT: désinstallateur (« Désinstallation de EcoAudit » / « EcoAudit Uninstall ») n'est PAS bloquant.
-  ; ECOAUDIT: Pendant .onInit, la fenêtre de l'instance courante n'est pas encore créée : FindWindow ne peut
-  ; ECOAUDIT: pas la trouver elle-même. Limites acceptées : une instance silencieuse (/S, sans fenêtre)
-  ; ECOAUDIT: n'est pas détectée, et une MessageBox d'une autre instance (même titre) l'est.
-  ; ECOAUDIT: Si les titres changent (Caption, ecoauditUpdateTitle), mettre à jour la liste ci-dessous.
-  StrCpy $EcoAuditTmp 0
-  !insertmacro ECOAUDIT_FIND_INSTALLER_WINDOW "Installation de ${PRODUCTNAME}"
-  !insertmacro ECOAUDIT_FIND_INSTALLER_WINDOW "${PRODUCTNAME} Setup"
-  !insertmacro ECOAUDIT_FIND_INSTALLER_WINDOW "Mise à jour de ${PRODUCTNAME}"
-  !insertmacro ECOAUDIT_FIND_INSTALLER_WINDOW "${PRODUCTNAME} Update"
-  ${If} $EcoAuditTmp <> 0
-    MessageBox MB_ICONINFORMATION|MB_OK "$(ecoauditSetupAlreadyRunning)" /SD IDOK
+  ; LUCAAUDIT: un seul setup OU update à la fois, détection « au mieux » SANS appel système : l'ancien
+  ; LUCAAUDIT: mutex nommé « Global\... » (créé par un appel système via le plugin System) a été retiré, car Norton le
+  ; LUCAAUDIT: classait comme comportement suspect (IDP.Generic) dans un exe élevé non signé.
+  ; LUCAAUDIT: Instruction NSIS native FindWindow (pas de plugin) : la fenêtre principale d'un installateur
+  ; LUCAAUDIT: NSIS est une boîte de dialogue de premier niveau de classe « #32770 », dont le titre est la
+  ; LUCAAUDIT: Caption de l'exe, suivie d'une espace sur les pages MUI2 (Caption " " de page) et sans
+  ; LUCAAUDIT: espace sur la page Bienvenue. Titres testés (titre exact, avec et sans espace finale) :
+  ; LUCAAUDIT:   setup  : « Installation de Luca-Audit » (French.nlf ^SetupCaption), « Luca-Audit Setup » (English.nlf)
+  ; LUCAAUDIT:   update : « Mise à jour de Luca-Audit », « Luca-Audit Update » (LangString lucaauditUpdateTitle)
+  ; LUCAAUDIT: Le setup et l'update se détectent donc mutuellement, quelle que soit la langue. Le
+  ; LUCAAUDIT: désinstallateur (« Désinstallation de Luca-Audit » / « Luca-Audit Uninstall ») n'est PAS bloquant.
+  ; LUCAAUDIT: Pendant .onInit, la fenêtre de l'instance courante n'est pas encore créée : FindWindow ne peut
+  ; LUCAAUDIT: pas la trouver elle-même. Limites acceptées : une instance silencieuse (/S, sans fenêtre)
+  ; LUCAAUDIT: n'est pas détectée, et une MessageBox d'une autre instance (même titre) l'est.
+  ; LUCAAUDIT: Si les titres changent (Caption, lucaauditUpdateTitle), mettre à jour la liste ci-dessous.
+  StrCpy $LucaAuditTmp 0
+  !insertmacro LUCAAUDIT_FIND_INSTALLER_WINDOW "Installation de ${PRODUCTNAME}"
+  !insertmacro LUCAAUDIT_FIND_INSTALLER_WINDOW "${PRODUCTNAME} Setup"
+  !insertmacro LUCAAUDIT_FIND_INSTALLER_WINDOW "Mise à jour de ${PRODUCTNAME}"
+  !insertmacro LUCAAUDIT_FIND_INSTALLER_WINDOW "${PRODUCTNAME} Update"
+  ${If} $LucaAuditTmp <> 0
+    MessageBox MB_ICONINFORMATION|MB_OK "$(lucaauditSetupAlreadyRunning)" /SD IDOK
     Abort
   ${EndIf}
 
-  StrCpy $WixMode 0 ; ECOAUDIT: migration WiX supprimée (évite aussi l'avertissement 6001 de makensis)
+  StrCpy $WixMode 0 ; LUCAAUDIT: migration WiX supprimée (évite aussi l'avertissement 6001 de makensis)
 
   ${GetOptions} $CMDLINE "/P" $PassiveMode
   ${IfNot} ${Errors}
@@ -581,9 +581,9 @@ Function .onInit
         StrCpy $INSTDIR "$PROGRAMFILES\${PRODUCTNAME}"
       ${EndIf}
     !else if "${INSTALLMODE}" == "currentUser"
-      ; ECOAUDIT: %LOCALAPPDATA%\Programs\${PRODUCTNAME} (emplacement standard des applications installées
-      ; ECOAUDIT: pour l'utilisateur, comme VS Code ou Discord) au lieu de $LOCALAPPDATA\${PRODUCTNAME}.
-      ; ECOAUDIT: Distinct du dossier de données $LOCALAPPDATA\${BUNDLEID} (cache WebView2).
+      ; LUCAAUDIT: %LOCALAPPDATA%\Programs\${PRODUCTNAME} (emplacement standard des applications installées
+      ; LUCAAUDIT: pour l'utilisateur, comme VS Code ou Discord) au lieu de $LOCALAPPDATA\${PRODUCTNAME}.
+      ; LUCAAUDIT: Distinct du dossier de données $LOCALAPPDATA\${BUNDLEID} (cache WebView2).
       StrCpy $INSTDIR "$LOCALAPPDATA\Programs\${PRODUCTNAME}"
     !endif
 
@@ -595,26 +595,26 @@ Function .onInit
     !insertmacro MULTIUSER_INIT
   !endif
 
-  ; ECOAUDIT: détection d'une installation existante, puis aiguillage setup / update.
-  ; ECOAUDIT: Les Abort sont faits ici, directement dans .onInit (l'installateur quitte sans page).
-  ; ECOAUDIT: installMode currentUser : SetContext ci-dessus a fait SetShellVarContext current, donc
-  ; ECOAUDIT: EcoAuditDetectInstall (SHCTX) ne voit QUE l'installation de l'utilisateur courant (HKCU).
-  ; ECOAUDIT: Une ancienne installation perMachine (HKLM) n'est pas « déjà installé » : le setup la
-  ; ECOAUDIT: signale (EcoAuditDetectLegacyMachineInstall) et l'update l'ignore.
-  Call EcoAuditDetectInstall
-  !ifdef ECOAUDIT_UPDATER
-    ; ECOAUDIT: UPDATE lancé par l'app (src-tauri/src/updater.rs) avec /ECOAUDIT_WAITPID=<pid> : l'app a
-    ; ECOAUDIT: déjà arrêté son serveur node.exe et se ferme. On attend la fin de CE processus (par son
-    ; ECOAUDIT: PID, pas par son nom) pendant 15 s au plus, AVANT d'afficher quoi que ce soit : aucune
-    ; ECOAUDIT: fenêtre ni console. Processus déjà terminé : OpenProcess échoue, pas d'attente. Au-delà de
-    ; ECOAUDIT: 15 s, CheckIfAppIsRunning (section Install) prend le relais comme avant.
-    ${GetOptions} $CMDLINE "/ECOAUDIT_WAITPID=" $EcoAuditTmp
+  ; LUCAAUDIT: détection d'une installation existante, puis aiguillage setup / update.
+  ; LUCAAUDIT: Les Abort sont faits ici, directement dans .onInit (l'installateur quitte sans page).
+  ; LUCAAUDIT: installMode currentUser : SetContext ci-dessus a fait SetShellVarContext current, donc
+  ; LUCAAUDIT: LucaAuditDetectInstall (SHCTX) ne voit QUE l'installation de l'utilisateur courant (HKCU).
+  ; LUCAAUDIT: Une ancienne installation perMachine (HKLM) n'est pas « déjà installé » : le setup la
+  ; LUCAAUDIT: signale (LucaAuditDetectLegacyMachineInstall) et l'update l'ignore.
+  Call LucaAuditDetectInstall
+  !ifdef LUCAAUDIT_UPDATER
+    ; LUCAAUDIT: UPDATE lancé par l'app (src-tauri/src/updater.rs) avec /LUCAAUDIT_WAITPID=<pid> : l'app a
+    ; LUCAAUDIT: déjà arrêté son serveur node.exe et se ferme. On attend la fin de CE processus (par son
+    ; LUCAAUDIT: PID, pas par son nom) pendant 15 s au plus, AVANT d'afficher quoi que ce soit : aucune
+    ; LUCAAUDIT: fenêtre ni console. Processus déjà terminé : OpenProcess échoue, pas d'attente. Au-delà de
+    ; LUCAAUDIT: 15 s, CheckIfAppIsRunning (section Install) prend le relais comme avant.
+    ${GetOptions} $CMDLINE "/LUCAAUDIT_WAITPID=" $LucaAuditTmp
     ${IfNot} ${Errors}
-      IntOp $EcoAuditTmp $EcoAuditTmp + 0
-      ${If} $EcoAuditTmp > 0
+      IntOp $LucaAuditTmp $LucaAuditTmp + 0
+      ${If} $LucaAuditTmp > 0
         Push $0
         Push $1
-        System::Call 'kernel32::OpenProcess(i 0x00100000, i 0, i $EcoAuditTmp) p .r0' ; SYNCHRONIZE
+        System::Call 'kernel32::OpenProcess(i 0x00100000, i 0, i $LucaAuditTmp) p .r0' ; SYNCHRONIZE
         ${If} $0 P<> 0
           System::Call 'kernel32::WaitForSingleObject(p r0, i 15000) i .r1'
           System::Call 'kernel32::CloseHandle(p r0)'
@@ -623,39 +623,39 @@ Function .onInit
         Pop $0
       ${EndIf}
     ${EndIf}
-    ; ECOAUDIT: UPDATE : EcoAudit doit être installé
-    ${If} $EcoAuditInstalled <> 1
-      MessageBox MB_ICONINFORMATION|MB_OK "$(ecoauditNotInstalledUseSetup)" /SD IDOK
+    ; LUCAAUDIT: UPDATE : Luca-Audit doit être installé
+    ${If} $LucaAuditInstalled <> 1
+      MessageBox MB_ICONINFORMATION|MB_OK "$(lucaauditNotInstalledUseSetup)" /SD IDOK
       Abort
     ${EndIf}
-    ; ECOAUDIT: refus si la version installée est plus récente (SemverCompare : -1 = ${VERSION} plus
-    ; ECOAUDIT: ancienne). Même version : autorisé (répare). Version inconnue (DisplayVersion absent,
-    ; ECOAUDIT: installation abîmée) : autorisé (répare).
-    ${If} $EcoAuditInstalledVersion != ""
-      nsis_tauri_utils::SemverCompare "${VERSION}" $EcoAuditInstalledVersion
-      Pop $EcoAuditTmp
-      ${If} $EcoAuditTmp = -1
-        MessageBox MB_ICONINFORMATION|MB_OK "$(ecoauditNewerInstalled)" /SD IDOK
+    ; LUCAAUDIT: refus si la version installée est plus récente (SemverCompare : -1 = ${VERSION} plus
+    ; LUCAAUDIT: ancienne). Même version : autorisé (répare). Version inconnue (DisplayVersion absent,
+    ; LUCAAUDIT: installation abîmée) : autorisé (répare).
+    ${If} $LucaAuditInstalledVersion != ""
+      nsis_tauri_utils::SemverCompare "${VERSION}" $LucaAuditInstalledVersion
+      Pop $LucaAuditTmp
+      ${If} $LucaAuditTmp = -1
+        MessageBox MB_ICONINFORMATION|MB_OK "$(lucaauditNewerInstalled)" /SD IDOK
         Abort
       ${EndIf}
     ${EndIf}
-    ; ECOAUDIT: dossier imposé = dossier existant (ignore /D= ; pas de page Dossier). S'il est inconnu
-    ; ECOAUDIT: (registre très abîmé), on garde le dossier par défaut calculé ci-dessus.
-    ${If} $EcoAuditInstalledDir != ""
-      StrCpy $INSTDIR $EcoAuditInstalledDir
+    ; LUCAAUDIT: dossier imposé = dossier existant (ignore /D= ; pas de page Dossier). S'il est inconnu
+    ; LUCAAUDIT: (registre très abîmé), on garde le dossier par défaut calculé ci-dessus.
+    ${If} $LucaAuditInstalledDir != ""
+      StrCpy $INSTDIR $LucaAuditInstalledDir
     ${EndIf}
   !else
-    ; ECOAUDIT: SETUP : première installation uniquement
-    ${If} $EcoAuditInstalled = 1
-      MessageBox MB_ICONINFORMATION|MB_OK "$(ecoauditAlreadyInstalledUseUpdate)" /SD IDOK
+    ; LUCAAUDIT: SETUP : première installation uniquement
+    ${If} $LucaAuditInstalled = 1
+      MessageBox MB_ICONINFORMATION|MB_OK "$(lucaauditAlreadyInstalledUseUpdate)" /SD IDOK
       Abort
     ${EndIf}
-    ; ECOAUDIT: ancienne installation pour tous les utilisateurs (Program Files) : information seulement,
-    ; ECOAUDIT: l'installation continue (pas d'Abort) et rien n'est supprimé. Placé après SetContext :
-    ; ECOAUDIT: SetRegView 64 est nécessaire pour lire la clé HKLM écrite par l'ancien installateur x64.
-    Call EcoAuditDetectLegacyMachineInstall
-    ${If} $EcoAuditLegacyDir != ""
-      MessageBox MB_ICONINFORMATION "$(ecoauditLegacyMachineInstall)" /SD IDOK
+    ; LUCAAUDIT: ancienne installation pour tous les utilisateurs (Program Files) : information seulement,
+    ; LUCAAUDIT: l'installation continue (pas d'Abort) et rien n'est supprimé. Placé après SetContext :
+    ; LUCAAUDIT: SetRegView 64 est nécessaire pour lire la clé HKLM écrite par l'ancien installateur x64.
+    Call LucaAuditDetectLegacyMachineInstall
+    ${If} $LucaAuditLegacyDir != ""
+      MessageBox MB_ICONINFORMATION "$(lucaauditLegacyMachineInstall)" /SD IDOK
     ${EndIf}
   !endif
 FunctionEnd
@@ -773,8 +773,8 @@ Section WebView2
 SectionEnd
 
 Section Install
-  ; ECOAUDIT: section commune au setup et à l'update : copie par-dessus, réécrit uninstall.exe et les
-  ; ECOAUDIT: clés du registre (répare une installation abîmée), ne désinstalle rien.
+  ; LUCAAUDIT: section commune au setup et à l'update : copie par-dessus, réécrit uninstall.exe et les
+  ; LUCAAUDIT: clés du registre (répare une installation abîmée), ne désinstalle rien.
   SetOutPath $INSTDIR
 
   !ifmacrodef NSIS_HOOK_PREINSTALL
@@ -782,9 +782,9 @@ Section Install
   !endif
 
   !insertmacro CheckIfAppIsRunning "$INSTDIR\${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
-  ; ECOAUDIT: serveur embarqué node.exe : normalement arrêté avec l'app (RunEvent::Exit), mais il peut
-  ; ECOAUDIT: survivre si l'app a été tuée de force ; il verrouillerait node.exe et app\. Vérifié par son
-  ; ECOAUDIT: CHEMIN COMPLET (Restart Manager) : les autres node.exe de la machine ne sont pas touchés.
+  ; LUCAAUDIT: serveur embarqué node.exe : normalement arrêté avec l'app (RunEvent::Exit), mais il peut
+  ; LUCAAUDIT: survivre si l'app a été tuée de force ; il verrouillerait node.exe et app\. Vérifié par son
+  ; LUCAAUDIT: CHEMIN COMPLET (Restart Manager) : les autres node.exe de la machine ne sont pas touchés.
   ${If} ${FileExists} "$INSTDIR\node.exe"
     !insertmacro CheckIfAppIsRunning "$INSTDIR\node.exe" "${PRODUCTNAME}"
   ${EndIf}
@@ -868,10 +868,10 @@ Section Install
     Call CreateOrUpdateStartMenuShortcut
   !insertmacro MUI_STARTMENU_WRITE_END
 
-  !ifdef ECOAUDIT_UPDATER
-    ; ECOAUDIT: update : raccourci Bureau mis à jour s'il existe (et pointe vers EcoAudit), jamais créé,
-    ; ECOAUDIT: quel que soit le mode (pas de case sur la page de fin)
-    Call EcoAuditUpdateDesktopShortcut
+  !ifdef LUCAAUDIT_UPDATER
+    ; LUCAAUDIT: update : raccourci Bureau mis à jour s'il existe (et pointe vers Luca-Audit), jamais créé,
+    ; LUCAAUDIT: quel que soit le mode (pas de case sur la page de fin)
+    Call LucaAuditUpdateDesktopShortcut
   !else
   ; Create desktop shortcut for silent and passive installers
   ; because finish page will be skipped
@@ -885,18 +885,18 @@ Section Install
     !insertmacro NSIS_HOOK_POSTINSTALL
   !endif
 
-  !ifdef ECOAUDIT_UPDATER
-    ; ECOAUDIT: update en mode graphique : UN seul lancement de la nouvelle version, ici, une fois tous
-    ; ECOAUDIT: les fichiers copiés (fil de la section : la fenêtre reste réactive même si l'antivirus
-    ; ECOAUDIT: retarde le démarrage), puis fermeture automatique (page de fin sautée). En passif ou
-    ; ECOAUDIT: silencieux, rien ici : .onInstSuccess garde la convention /R du template.
+  !ifdef LUCAAUDIT_UPDATER
+    ; LUCAAUDIT: update en mode graphique : UN seul lancement de la nouvelle version, ici, une fois tous
+    ; LUCAAUDIT: les fichiers copiés (fil de la section : la fenêtre reste réactive même si l'antivirus
+    ; LUCAAUDIT: retarde le démarrage), puis fermeture automatique (page de fin sautée). En passif ou
+    ; LUCAAUDIT: silencieux, rien ici : .onInstSuccess garde la convention /R du template.
     ${IfNot} ${Silent}
     ${AndIf} $PassiveMode <> 1
-      DetailPrint "$(ecoauditUpdateLaunching)"
+      DetailPrint "$(lucaauditUpdateLaunching)"
       ClearErrors
-      !insertmacro ECOAUDIT_RUN_APP
+      !insertmacro LUCAAUDIT_RUN_APP
       ${IfNot} ${Errors}
-        StrCpy $EcoAuditLaunched 1
+        StrCpy $LucaAuditLaunched 1
         SetAutoClose true
       ${EndIf}
     ${EndIf}
@@ -1064,7 +1064,7 @@ SectionEnd
 
 Function RestorePreviousInstallLocation
   ReadRegStr $4 SHCTX "${MANUPRODUCTKEY}" ""
-  !insertmacro ECOAUDIT_UNQUOTE $4 ; ECOAUDIT: chemin du registre éventuellement entre guillemets
+  !insertmacro LUCAAUDIT_UNQUOTE $4 ; LUCAAUDIT: chemin du registre éventuellement entre guillemets
   StrCmp $4 "" +2 0
     StrCpy $INSTDIR $4
 FunctionEnd
@@ -1146,56 +1146,56 @@ Function CreateOrUpdateDesktopShortcut
 FunctionEnd
 
 ; ---------------------------------------------------------------------------------------------
-; ECOAUDIT: fonctions ajoutées (détection d'une installation existante, raccourci Bureau de l'update)
+; LUCAAUDIT: fonctions ajoutées (détection d'une installation existante, raccourci Bureau de l'update)
 ; ---------------------------------------------------------------------------------------------
 
-; ECOAUDIT: détection (dans .onInit, après SetContext) d'une installation existante. Sorties :
-; ECOAUDIT:   $EcoAuditInstalled        = 1 si ${UNINSTKEY} a un UninstallString ou un DisplayVersion, OU si
-; ECOAUDIT:                              le dossier enregistré existe et contient un fichier de EcoAudit
-; ECOAUDIT:                              (${MAINBINARYNAME}.exe, uninstall.exe, node.exe ou app\) ; sinon 0.
-; ECOAUDIT:                              Un dossier enregistré mais vide ou absent (reste d'une ancienne
-; ECOAUDIT:                              désinstallation, qui ne supprime pas toujours ${MANUPRODUCTKEY})
-; ECOAUDIT:                              ne compte pas : le setup reste alors utilisable.
-; ECOAUDIT:   $EcoAuditInstalledVersion = DisplayVersion (vide si inconnue) ;
-; ECOAUDIT:   $EcoAuditInstalledDir     = valeur par défaut de ${MANUPRODUCTKEY} (comme
-; ECOAUDIT:                              RestorePreviousInstallLocation), sinon InstallLocation de
-; ECOAUDIT:                              ${UNINSTKEY}, sinon dossier de UninstallString ; sans guillemets
-; ECOAUDIT:                              (ECOAUDIT_UNQUOTE) ni « \ » final.
-; ECOAUDIT: Registres préservés ($0, $1).
-; ECOAUDIT: Lit SHCTX, c'est-à-dire HKCU en installMode currentUser (installation de l'utilisateur courant).
-Function EcoAuditDetectInstall
+; LUCAAUDIT: détection (dans .onInit, après SetContext) d'une installation existante. Sorties :
+; LUCAAUDIT:   $LucaAuditInstalled        = 1 si ${UNINSTKEY} a un UninstallString ou un DisplayVersion, OU si
+; LUCAAUDIT:                              le dossier enregistré existe et contient un fichier de Luca-Audit
+; LUCAAUDIT:                              (${MAINBINARYNAME}.exe, uninstall.exe, node.exe ou app\) ; sinon 0.
+; LUCAAUDIT:                              Un dossier enregistré mais vide ou absent (reste d'une ancienne
+; LUCAAUDIT:                              désinstallation, qui ne supprime pas toujours ${MANUPRODUCTKEY})
+; LUCAAUDIT:                              ne compte pas : le setup reste alors utilisable.
+; LUCAAUDIT:   $LucaAuditInstalledVersion = DisplayVersion (vide si inconnue) ;
+; LUCAAUDIT:   $LucaAuditInstalledDir     = valeur par défaut de ${MANUPRODUCTKEY} (comme
+; LUCAAUDIT:                              RestorePreviousInstallLocation), sinon InstallLocation de
+; LUCAAUDIT:                              ${UNINSTKEY}, sinon dossier de UninstallString ; sans guillemets
+; LUCAAUDIT:                              (LUCAAUDIT_UNQUOTE) ni « \ » final.
+; LUCAAUDIT: Registres préservés ($0, $1).
+; LUCAAUDIT: Lit SHCTX, c'est-à-dire HKCU en installMode currentUser (installation de l'utilisateur courant).
+Function LucaAuditDetectInstall
   Push $0
   Push $1
-  StrCpy $EcoAuditInstalled 0
+  StrCpy $LucaAuditInstalled 0
 
-  ReadRegStr $EcoAuditInstalledVersion SHCTX "${UNINSTKEY}" "DisplayVersion"
+  ReadRegStr $LucaAuditInstalledVersion SHCTX "${UNINSTKEY}" "DisplayVersion"
   ReadRegStr $0 SHCTX "${UNINSTKEY}" "UninstallString"
   ${If} $0 != ""
-  ${OrIf} $EcoAuditInstalledVersion != ""
-    StrCpy $EcoAuditInstalled 1
+  ${OrIf} $LucaAuditInstalledVersion != ""
+    StrCpy $LucaAuditInstalled 1
   ${EndIf}
 
   ReadRegStr $1 SHCTX "${MANUPRODUCTKEY}" ""
-  !insertmacro ECOAUDIT_UNQUOTE $1
+  !insertmacro LUCAAUDIT_UNQUOTE $1
   ${If} $1 == ""
     ReadRegStr $1 SHCTX "${UNINSTKEY}" "InstallLocation"
-    !insertmacro ECOAUDIT_UNQUOTE $1
+    !insertmacro LUCAAUDIT_UNQUOTE $1
   ${EndIf}
   ${If} $1 == ""
   ${AndIf} $0 != ""
     ; UninstallString est écrit "C:\...\uninstall.exe" (avec guillemets)
-    !insertmacro ECOAUDIT_UNQUOTE $0
+    !insertmacro LUCAAUDIT_UNQUOTE $0
     ${GetParent} $0 $1
   ${EndIf}
-  !insertmacro ECOAUDIT_STRIP_TRAILING_SLASH $1
-  StrCpy $EcoAuditInstalledDir $1
+  !insertmacro LUCAAUDIT_STRIP_TRAILING_SLASH $1
+  StrCpy $LucaAuditInstalledDir $1
 
   ${If} $1 != ""
     ${If} ${FileExists} "$1\${MAINBINARYNAME}.exe"
     ${OrIf} ${FileExists} "$1\uninstall.exe"
     ${OrIf} ${FileExists} "$1\node.exe"
     ${OrIf} ${FileExists} "$1\app\*.*"
-      StrCpy $EcoAuditInstalled 1
+      StrCpy $LucaAuditInstalled 1
     ${EndIf}
   ${EndIf}
 
@@ -1203,25 +1203,25 @@ Function EcoAuditDetectInstall
   Pop $0
 FunctionEnd
 
-!ifndef ECOAUDIT_UPDATER
-; ECOAUDIT: setup seulement (dans .onInit, après SetContext) : cherche une ancienne installation
-; ECOAUDIT: perMachine (versions <= 0.1.11, Program Files + HKLM). Lit HKLM EXPLICITEMENT (et non SHCTX,
-; ECOAUDIT: qui vaut HKCU en currentUser), en vue 64 bits (SetRegView 64 de SetContext). Ne modifie rien.
-; ECOAUDIT: Sortie : $EcoAuditLegacyDir = dossier de l'ancienne installation, vide si aucune. Trouvée si :
-; ECOAUDIT:   - le dossier enregistré en HKLM (${MANUPRODUCTKEY}, sinon InstallLocation, sinon dossier de
-; ECOAUDIT:     UninstallString de ${UNINSTKEY}) contient un fichier de EcoAudit (${MAINBINARYNAME}.exe,
-; ECOAUDIT:     uninstall.exe, node.exe ou app\) ;
-; ECOAUDIT:   - sinon $PROGRAMFILES64\${PRODUCTNAME} contient un de ces fichiers ;
-; ECOAUDIT:   - sinon HKLM\${UNINSTKEY} a un UninstallString ou un DisplayVersion (entrée encore visible dans
-; ECOAUDIT:     Paramètres > Applications) : dossier enregistré, ou $PROGRAMFILES64\${PRODUCTNAME} par défaut.
-; ECOAUDIT: Une valeur HKLM\${MANUPRODUCTKEY} seule, dont le dossier est vide ou absent (reste d'une ancienne
-; ECOAUDIT: désinstallation, qui ne la supprime que si la case « données » est cochée), ne compte pas.
-; ECOAUDIT: Registres préservés ($0, $1, $2).
-Function EcoAuditDetectLegacyMachineInstall
+!ifndef LUCAAUDIT_UPDATER
+; LUCAAUDIT: setup seulement (dans .onInit, après SetContext) : cherche une ancienne installation
+; LUCAAUDIT: perMachine (versions <= 0.1.11, Program Files + HKLM). Lit HKLM EXPLICITEMENT (et non SHCTX,
+; LUCAAUDIT: qui vaut HKCU en currentUser), en vue 64 bits (SetRegView 64 de SetContext). Ne modifie rien.
+; LUCAAUDIT: Sortie : $LucaAuditLegacyDir = dossier de l'ancienne installation, vide si aucune. Trouvée si :
+; LUCAAUDIT:   - le dossier enregistré en HKLM (${MANUPRODUCTKEY}, sinon InstallLocation, sinon dossier de
+; LUCAAUDIT:     UninstallString de ${UNINSTKEY}) contient un fichier de Luca-Audit (${MAINBINARYNAME}.exe,
+; LUCAAUDIT:     uninstall.exe, node.exe ou app\) ;
+; LUCAAUDIT:   - sinon $PROGRAMFILES64\${PRODUCTNAME} contient un de ces fichiers ;
+; LUCAAUDIT:   - sinon HKLM\${UNINSTKEY} a un UninstallString ou un DisplayVersion (entrée encore visible dans
+; LUCAAUDIT:     Paramètres > Applications) : dossier enregistré, ou $PROGRAMFILES64\${PRODUCTNAME} par défaut.
+; LUCAAUDIT: Une valeur HKLM\${MANUPRODUCTKEY} seule, dont le dossier est vide ou absent (reste d'une ancienne
+; LUCAAUDIT: désinstallation, qui ne la supprime que si la case « données » est cochée), ne compte pas.
+; LUCAAUDIT: Registres préservés ($0, $1, $2).
+Function LucaAuditDetectLegacyMachineInstall
   Push $0
   Push $1
   Push $2
-  StrCpy $EcoAuditLegacyDir ""
+  StrCpy $LucaAuditLegacyDir ""
 
   ReadRegStr $0 HKLM "${UNINSTKEY}" "UninstallString"
   ReadRegStr $1 HKLM "${UNINSTKEY}" "DisplayVersion"
@@ -1232,42 +1232,42 @@ Function EcoAuditDetectLegacyMachineInstall
   ${EndIf}
 
   ReadRegStr $1 HKLM "${MANUPRODUCTKEY}" ""
-  !insertmacro ECOAUDIT_UNQUOTE $1
+  !insertmacro LUCAAUDIT_UNQUOTE $1
   ${If} $1 == ""
     ReadRegStr $1 HKLM "${UNINSTKEY}" "InstallLocation"
-    !insertmacro ECOAUDIT_UNQUOTE $1
+    !insertmacro LUCAAUDIT_UNQUOTE $1
   ${EndIf}
   ${If} $1 == ""
   ${AndIf} $0 != ""
-    !insertmacro ECOAUDIT_UNQUOTE $0
+    !insertmacro LUCAAUDIT_UNQUOTE $0
     ${GetParent} $0 $1
   ${EndIf}
-  !insertmacro ECOAUDIT_STRIP_TRAILING_SLASH $1
+  !insertmacro LUCAAUDIT_STRIP_TRAILING_SLASH $1
 
   ${If} $1 != ""
     ${If} ${FileExists} "$1\${MAINBINARYNAME}.exe"
     ${OrIf} ${FileExists} "$1\uninstall.exe"
     ${OrIf} ${FileExists} "$1\node.exe"
     ${OrIf} ${FileExists} "$1\app\*.*"
-      StrCpy $EcoAuditLegacyDir $1
+      StrCpy $LucaAuditLegacyDir $1
     ${EndIf}
   ${EndIf}
 
-  ${If} $EcoAuditLegacyDir == ""
+  ${If} $LucaAuditLegacyDir == ""
     ${If} ${FileExists} "$PROGRAMFILES64\${PRODUCTNAME}\${MAINBINARYNAME}.exe"
     ${OrIf} ${FileExists} "$PROGRAMFILES64\${PRODUCTNAME}\uninstall.exe"
     ${OrIf} ${FileExists} "$PROGRAMFILES64\${PRODUCTNAME}\node.exe"
     ${OrIf} ${FileExists} "$PROGRAMFILES64\${PRODUCTNAME}\app\*.*"
-      StrCpy $EcoAuditLegacyDir "$PROGRAMFILES64\${PRODUCTNAME}"
+      StrCpy $LucaAuditLegacyDir "$PROGRAMFILES64\${PRODUCTNAME}"
     ${EndIf}
   ${EndIf}
 
-  ${If} $EcoAuditLegacyDir == ""
+  ${If} $LucaAuditLegacyDir == ""
   ${AndIf} $2 = 1
     ${If} $1 != ""
-      StrCpy $EcoAuditLegacyDir $1
+      StrCpy $LucaAuditLegacyDir $1
     ${Else}
-      StrCpy $EcoAuditLegacyDir "$PROGRAMFILES64\${PRODUCTNAME}"
+      StrCpy $LucaAuditLegacyDir "$PROGRAMFILES64\${PRODUCTNAME}"
     ${EndIf}
   ${EndIf}
 
@@ -1277,12 +1277,12 @@ Function EcoAuditDetectLegacyMachineInstall
 FunctionEnd
 !endif
 
-!ifdef ECOAUDIT_UPDATER
-; ECOAUDIT: update : met à jour le raccourci Bureau (nouvelle cible, icône, AppUserModelId) seulement
-; ECOAUDIT: s'il existe et pointe vers ${MAINBINARYNAME}.exe (ou vers l'ancien nom d'exe) de $INSTDIR.
-; ECOAUDIT: N'en crée jamais. CreateOrUpdateDesktopShortcut (template) migre l'ancien nom d'exe, sinon
-; ECOAUDIT: réécrit le raccourci (sauf /UPDATE ou /NS). $0-$3 modifiés (IsShortcutTarget), comme le template.
-Function EcoAuditUpdateDesktopShortcut
+!ifdef LUCAAUDIT_UPDATER
+; LUCAAUDIT: update : met à jour le raccourci Bureau (nouvelle cible, icône, AppUserModelId) seulement
+; LUCAAUDIT: s'il existe et pointe vers ${MAINBINARYNAME}.exe (ou vers l'ancien nom d'exe) de $INSTDIR.
+; LUCAAUDIT: N'en crée jamais. CreateOrUpdateDesktopShortcut (template) migre l'ancien nom d'exe, sinon
+; LUCAAUDIT: réécrit le raccourci (sauf /UPDATE ou /NS). $0-$3 modifiés (IsShortcutTarget), comme le template.
+Function LucaAuditUpdateDesktopShortcut
   !insertmacro IsShortcutTarget "$DESKTOP\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe"
   Pop $0
   ${If} $0 <> 1

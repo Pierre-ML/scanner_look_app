@@ -1,15 +1,15 @@
-// Compile l'exe de MISE À JOUR (EcoAudit_<version>_x64-update.exe) après `tauri build`.
+// Compile l'exe de MISE À JOUR (Luca-Audit_<version>_x64-update.exe) après `tauri build`.
 //
 // tauri build rend notre template NSIS (src-tauri/windows/installer.nsi) dans
 // src-tauri/target/release/nsis/x64/installer.nsi (avec utils.nsh, les fichiers de langue, etc.)
-// et en tire le SETUP. Ce script recompile ce même script rendu avec /DECOAUDIT_UPDATER : le template
-// produit alors l'exe de mise à jour (pages Installation et Fin seulement, refus si EcoAudit n'est pas
+// et en tire le SETUP. Ce script recompile ce même script rendu avec /DLUCAAUDIT_UPDATER : le template
+// produit alors l'exe de mise à jour (pages Installation et Fin seulement, refus si Luca-Audit n'est pas
 // installé ou si une version plus récente l'est).
 //
 // Variables d'environnement facultatives (le comportement par défaut ne change pas sans elles) :
-//   ECOAUDIT_NSIS_DIR        dossier contenant le installer.nsi rendu (défaut : target/release/nsis/x64)
-//   ECOAUDIT_UPDATE_OUT_DIR  dossier de sortie de l'exe (défaut : target/release/bundle/nsis)
-//   ECOAUDIT_MAKENSIS        chemin de makensis.exe (défaut : celui téléchargé par Tauri)
+//   LUCAAUDIT_NSIS_DIR        dossier contenant le installer.nsi rendu (défaut : target/release/nsis/x64)
+//   LUCAAUDIT_UPDATE_OUT_DIR  dossier de sortie de l'exe (défaut : target/release/bundle/nsis)
+//   LUCAAUDIT_MAKENSIS        chemin de makensis.exe (défaut : celui téléchargé par Tauri)
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -39,16 +39,16 @@ log('2/4 Vérification du script NSIS rendu par tauri build...');
 const targetDir = process.env.CARGO_TARGET_DIR && path.isAbsolute(process.env.CARGO_TARGET_DIR)
   ? process.env.CARGO_TARGET_DIR
   : path.join(tauri, 'target');
-const nsisDir = path.resolve(process.env.ECOAUDIT_NSIS_DIR || path.join(targetDir, 'release', 'nsis', 'x64'));
-const outDir = path.resolve(process.env.ECOAUDIT_UPDATE_OUT_DIR || path.join(targetDir, 'release', 'bundle', 'nsis'));
+const nsisDir = path.resolve(process.env.LUCAAUDIT_NSIS_DIR || path.join(targetDir, 'release', 'nsis', 'x64'));
+const outDir = path.resolve(process.env.LUCAAUDIT_UPDATE_OUT_DIR || path.join(targetDir, 'release', 'bundle', 'nsis'));
 const script = path.join(nsisDir, 'installer.nsi');
 if (!isFile(script)) {
   fail(`script NSIS rendu introuvable : ${script}\n  Lancez d'abord « npm run tauri build » (ou « npm run desktop:build », qui enchaîne les deux).`);
 }
 const rendered = fs.readFileSync(script, 'utf8');
-// Rendu issu du template EcoAudit à jour (sinon l'exe produit serait un simple setup)
-if (!rendered.includes('ECOAUDIT_UPDATER')) {
-  fail('le script rendu ne gère pas ECOAUDIT_UPDATER : il ne vient pas du template src-tauri/windows/installer.nsi à jour.\n  Relancez « npm run tauri build ».');
+// Rendu issu du template Luca-Audit à jour (sinon l'exe produit serait un simple setup)
+if (!rendered.includes('LUCAAUDIT_UPDATER')) {
+  fail('le script rendu ne gère pas LUCAAUDIT_UPDATER : il ne vient pas du template src-tauri/windows/installer.nsi à jour.\n  Relancez « npm run tauri build ».');
 }
 // Rendu de la bonne version (sinon on emballerait d'anciens fichiers sous un nouveau nom)
 const renderedVersion = (/^!define VERSION "([^"]*)"/m.exec(rendered) || [])[1];
@@ -62,18 +62,18 @@ log('3/4 Recherche de makensis.exe...');
 const localAppData = process.env.LOCALAPPDATA
   || (process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Local') : '');
 const candidates = [];
-if (process.env.ECOAUDIT_MAKENSIS) candidates.push(path.resolve(process.env.ECOAUDIT_MAKENSIS));
+if (process.env.LUCAAUDIT_MAKENSIS) candidates.push(path.resolve(process.env.LUCAAUDIT_MAKENSIS));
 if (localAppData) {
   candidates.push(path.join(localAppData, 'tauri', 'NSIS', 'makensis.exe'));
   candidates.push(path.join(localAppData, 'tauri', 'NSIS', 'Bin', 'makensis.exe'));
 }
 const makensis = candidates.find(isFile);
 if (!makensis) {
-  fail(`makensis.exe introuvable. Chemins essayés :\n  ${candidates.join('\n  ') || '(LOCALAPPDATA non défini)'}\n  Il est téléchargé par « npm run tauri build » ; sinon, indiquez son chemin dans ECOAUDIT_MAKENSIS.`);
+  fail(`makensis.exe introuvable. Chemins essayés :\n  ${candidates.join('\n  ') || '(LOCALAPPDATA non défini)'}\n  Il est téléchargé par « npm run tauri build » ; sinon, indiquez son chemin dans LUCAAUDIT_MAKENSIS.`);
 }
 log(`  ${makensis}`);
 
-// 4. Compilation (mêmes options que tauri-bundler, plus les deux defines EcoAudit)
+// 4. Compilation (mêmes options que tauri-bundler, plus les deux defines Luca-Audit)
 const outFile = path.join(outDir, `${productName}_${version}_x64-update.exe`);
 log(`4/4 Compilation de ${path.basename(outFile)}...`);
 fs.mkdirSync(outDir, { recursive: true });
@@ -85,8 +85,8 @@ const run = spawnSync(makensis, [
   '/INPUTCHARSET', 'UTF8',
   '/OUTPUTCHARSET', 'UTF8',
   '/V2',
-  '/DECOAUDIT_UPDATER',
-  `/DECOAUDIT_UPDATE_OUT=${outFile}`,
+  '/DLUCAAUDIT_UPDATER',
+  `/DLUCAAUDIT_UPDATE_OUT=${outFile}`,
   'installer.nsi',
 ], { cwd: nsisDir, stdio: 'inherit', env, windowsHide: true });
 if (run.error) fail(`lancement de makensis impossible (${run.error.message}).`);

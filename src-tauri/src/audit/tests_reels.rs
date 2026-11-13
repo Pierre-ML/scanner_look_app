@@ -56,7 +56,7 @@ async fn decouvrir(client: &reqwest::Client) -> u64 {
 #[tokio::test(flavor = "multi_thread")]
 #[ignore]
 async fn audit_complet_annulation_et_arret() {
-    let dossier = std::env::temp_dir().join(format!("eco-audit-test-{}", std::process::id()));
+    let dossier = std::env::temp_dir().join(format!("luca-audit-test-{}", std::process::id()));
     let mesure = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("mesure");
     tokio::spawn(demarrer(Reglages { dossier_donnees: dossier.clone(), node: "node".into(), dossier_mesure: mesure }));
 

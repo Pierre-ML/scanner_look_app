@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 // Build bureau (Tauri) : toutes les dépendances serveur sont embarquées dans dist/server,
 // pour ne pas dépendre de node_modules à l'exécution.
-const desktop = process.env.ECOAUDIT_DESKTOP === '1';
+const desktop = process.env.LUCAAUDIT_DESKTOP === '1';
 
 // Le logiciel sert l'interface avec le serveur Astro autonome (127.0.0.1:4321, lancé par le node
 // embarqué) ; en dev, `astro dev` écoute sur http://localhost:4321. L'API d'audit (127.0.0.1:4322)

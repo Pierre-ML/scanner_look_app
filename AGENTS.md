@@ -1,8 +1,8 @@
-# EcoAudit — consignes pour les agents
+# Luca-Audit — consignes pour les agents
 
 Logiciel de bureau **Windows** d'audit (Lighthouse bureau + mobile, estimation EcoIndex), sur le
 modèle de Lucania : Tauri 2 + interface Astro servie par un Node embarqué (sidecar) + installateur
-NSIS + release GitHub donnant deux exe (`EcoAudit-Setup.exe`, `EcoAudit-Update.exe`).
+NSIS + release GitHub donnant deux exe (`Luca-Audit-Setup.exe`, `Luca-Audit-Update.exe`).
 
 ## Structure
 
@@ -21,14 +21,14 @@ NSIS + release GitHub donnant deux exe (`EcoAudit-Setup.exe`, `EcoAudit-Update.e
   `name-installers.mjs`, `set-version.mjs`.
 - `.github/workflows/build.yml` — build Windows et release à chaque push sur `main`.
 
-Les audits sont des fichiers JSON dans `%APPDATA%\com.ecoaudit.desktop\audits`.
+Les audits sont des fichiers JSON dans `%APPDATA%\com.luca-audit.desktop\audits`.
 
 ## Lancer
 
 ```
 npm install
 npm run desktop:dev      # logiciel complet (interface + API d'audit + fenêtre Tauri)
-npm run desktop:build    # EcoAudit-Setup.exe et EcoAudit-Update.exe
+npm run desktop:build    # Luca-Audit-Setup.exe et Luca-Audit-Update.exe
 ```
 
 `npm run dev` lance l'interface seule (`astro dev`, localhost:4321), sans API d'audit.

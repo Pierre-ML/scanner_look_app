@@ -105,8 +105,8 @@ export async function closeBrowser(browser) {
 /** Lance une instance Chrome, réutilisée pour toutes les pages confiées à ce processus. */
 export async function launchBrowser() {
   // Le navigateur est trouvé par l'application, qui transmet son chemin.
-  const chemin = process.env.ECO_AUDIT_CHROME?.trim();
-  if (!chemin) throw new Error('Chemin du navigateur non transmis (variable ECO_AUDIT_CHROME).');
+  const chemin = process.env.LUCA_AUDIT_CHROME?.trim();
+  if (!chemin) throw new Error('Chemin du navigateur non transmis (variable LUCA_AUDIT_CHROME).');
 
   return puppeteer.launch({
     executablePath: chemin,

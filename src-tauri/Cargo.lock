@@ -999,26 +999,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
-name = "eco-audit"
-version = "1.0.1"
-dependencies = [
- "axum",
- "futures-util",
- "quick-xml 0.37.5",
- "reqwest 0.12.28",
- "scraper",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
- "tauri-plugin-single-instance",
- "tokio",
- "url",
- "windows-sys 0.61.2",
-]
-
-[[package]]
 name = "ego-tree"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2250,6 +2230,26 @@ name = "lru-slab"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4050469837a6ff301cd14c1f8f24f88549e6d548f24f64e2148eb0f72cebc51f"
+
+[[package]]
+name = "luca-audit"
+version = "1.0.1"
+dependencies = [
+ "axum",
+ "futures-util",
+ "quick-xml 0.37.5",
+ "reqwest 0.12.28",
+ "scraper",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+ "tauri-plugin-single-instance",
+ "tokio",
+ "url",
+ "windows-sys 0.61.2",
+]
 
 [[package]]
 name = "mac"

@@ -1,5 +1,5 @@
 //! Mise à jour de l'app : compare la version installée à la dernière release GitHub, puis
-//! télécharge et lance `EcoAudit-Update.exe` (l'installateur ferme l'app et remplace les fichiers).
+//! télécharge et lance `Luca-Audit-Update.exe` (l'installateur ferme l'app et remplace les fichiers).
 //!
 //! - `app_check_update` : interroge l'API GitHub (release la plus récente).
 //! - `app_install_update` : téléchargement en flux (300 Mo maximum) avec l'événement
@@ -9,7 +9,7 @@
 //!      arrêtés, puis serveur `node.exe` tué ET attendu (`kill` + `wait`) : plus rien ne verrouille
 //!      l'installation ;
 //!   2. lancement DIRECT de l'updater (exe graphique NSIS, aucune console, aucun `cmd`/`ping`) avec
-//!      l'argument `/ECOAUDIT_WAITPID=<pid de l'app>` : son `.onInit` attend (invisible, 15 s au plus)
+//!      l'argument `/LUCAAUDIT_WAITPID=<pid de l'app>` : son `.onInit` attend (invisible, 15 s au plus)
 //!      la fin de ce processus avant de copier les fichiers ;
 //!   3. `app.exit(0)` après 300 ms (le temps de répondre à la page). Filet : si la sortie normale
 //!      n'a pas abouti 10 s plus tard, le processus se termine lui-même (`TerminateProcess`).
@@ -28,14 +28,14 @@ use serde::{Deserialize, Serialize};
 use tauri::Emitter;
 
 const LATEST_API: &str = "https://api.github.com/repos/Pierre-ML/scanner_look_app/releases/latest";
-const UPDATER_URL: &str = "https://github.com/Pierre-ML/scanner_look_app/releases/latest/download/EcoAudit-Update.exe";
-const UPDATER_FILE: &str = "EcoAudit-Update.exe";
+const UPDATER_URL: &str = "https://github.com/Pierre-ML/scanner_look_app/releases/latest/download/Luca-Audit-Update.exe";
+const UPDATER_FILE: &str = "Luca-Audit-Update.exe";
 /// Taille maximale acceptée pour l'exe de mise à jour.
 const MAX_BYTES: u64 = 300 * 1024 * 1024;
 const PROGRESS_EVENT: &str = "app-update-progress";
 const PROGRESS_EVERY: Duration = Duration::from_millis(100);
 /// Argument lu par le `.onInit` de l'updater (src-tauri/windows/installer.nsi) : PID à attendre.
-const WAIT_PID_ARG: &str = "/ECOAUDIT_WAITPID=";
+const WAIT_PID_ARG: &str = "/LUCAAUDIT_WAITPID=";
 /// Délai avant `app.exit(0)` (réponse à la page), puis délai du filet de terminaison forcée.
 const EXIT_DELAY: Duration = Duration::from_millis(300);
 const EXIT_FALLBACK: Duration = Duration::from_secs(10);
@@ -87,7 +87,7 @@ fn allowed_host(url: &Url) -> bool {
 
 fn build_client(version: &str) -> Result<Client, String> {
   Client::builder()
-    .user_agent(format!("EcoAudit/{version}"))
+    .user_agent(format!("Luca-Audit/{version}"))
     .https_only(true)
     .connect_timeout(Duration::from_secs(15))
     .read_timeout(Duration::from_secs(60))
@@ -306,8 +306,8 @@ mod tests {
 
   #[test]
   fn argument_d_attente_de_l_updater() {
-    // Contrat avec le .onInit de src-tauri/windows/installer.nsi (GetOptions "/ECOAUDIT_WAITPID=")
-    assert_eq!(wait_pid_arg(1234), "/ECOAUDIT_WAITPID=1234");
+    // Contrat avec le .onInit de src-tauri/windows/installer.nsi (GetOptions "/LUCAAUDIT_WAITPID=")
+    assert_eq!(wait_pid_arg(1234), "/LUCAAUDIT_WAITPID=1234");
     assert!(!wait_pid_arg(7).contains(' '));
   }
 

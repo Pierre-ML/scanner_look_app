@@ -69,7 +69,7 @@ jobs:
           v="${{ steps.version.outputs.version }}"
           d="src-tauri/target/release/bundle/release"
           missing=0
-          for f in "EcoAudit-Setup.exe" "EcoAudit-Update.exe"; do
+          for f in "Luca-Audit-Setup.exe" "Luca-Audit-Update.exe"; do
             if [ ! -f "$d/$f" ]; then
               echo "::error::Fichier manquant : $d/$f"
               missing=1
@@ -81,7 +81,7 @@ jobs:
         if: steps.tag.outputs.exists == 'false'
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: EcoAudit v${{ steps.version.outputs.version }}
+          name: Luca-Audit v${{ steps.version.outputs.version }}
           files: |
-            src-tauri/target/release/bundle/release/EcoAudit-Setup.exe
-            src-tauri/target/release/bundle/release/EcoAudit-Update.exe
+            src-tauri/target/release/bundle/release/Luca-Audit-Setup.exe
+            src-tauri/target/release/bundle/release/Luca-Audit-Update.exe

@@ -573,7 +573,7 @@ mod tests {
     fn robots_groupe_specifique_et_tout_interdit() {
         let r = Robots::analyser(
             "https://s.fr/robots.txt",
-            "User-agent: eco-audit\nDisallow: /\n\nUser-agent: *\nDisallow:\n",
+            "User-agent: luca-audit\nDisallow: /\n\nUser-agent: *\nDisallow:\n",
         );
         assert!(!r.autorise("https://s.fr/x"));
         let r = Robots::analyser("https://s.fr/robots.txt", "User-agent: *\nDisallow:\n");

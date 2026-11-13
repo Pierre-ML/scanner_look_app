@@ -1,7 +1,7 @@
 {
   "name": "mesure",
   "version": "1.0.0",
-  "description": "Processus de mesure Lighthouse d'eco-audit, lancé par l'application (une ligne JSON par message sur stdin / stdout)",
+  "description": "Processus de mesure Lighthouse d'luca-audit, lancé par l'application (une ligne JSON par message sur stdin / stdout)",
   "type": "module",
   "private": true,
   "engines": {

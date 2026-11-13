@@ -1,4 +1,4 @@
-//! Journaux de diagnostic, dans `%LOCALAPPDATA%com.ecoaudit.desktoplogs-crash` :
+//! Journaux de diagnostic, dans `%LOCALAPPDATA%com.luca-audit.desktoplogs-crash` :
 //!
 //! - `session.log` : journal de la session en cours (écrasé à chaque démarrage, 2 Mo au plus) :
 //!   version, démarrage de l'API d'audit, erreurs notables ;
@@ -170,7 +170,7 @@ pub fn init(dir: PathBuf, version: &str) {
   install_panic_hook();
   arm_exception_filter();
   note(&format!(
-    "EcoAudit {version} ({}) sur {} {}",
+    "Luca-Audit {version} ({}) sur {} {}",
     profile(),
     std::env::consts::OS,
     std::env::consts::ARCH
@@ -186,7 +186,7 @@ pub fn start_session() {
   let Ok(mut file) = file else { return };
   let t = now();
   let mut head = format!(
-    "Journal de session EcoAudit - démarrage le {:04}-{:02}-{:02} à {:02}:{:02}:{:02}\n",
+    "Journal de session Luca-Audit - démarrage le {:04}-{:02}-{:02} à {:02}:{:02}:{:02}\n",
     t.y, t.mo, t.d, t.h, t.mi, t.s
   );
   for line in &j.ring {
@@ -272,7 +272,7 @@ fn write_report(kind: &str, body: impl FnOnce(&mut Cursor)) -> Option<PathBuf> {
   let t = now();
   let _ = write!(
     c,
-    "Rapport de plantage EcoAudit\nDate : {:04}-{:02}-{:02} {:02}:{:02}:{:02}\nVersion : {} ({})\nType : {kind}\n\n",
+    "Rapport de plantage Luca-Audit\nDate : {:04}-{:02}-{:02} {:02}:{:02}:{:02}\nVersion : {} ({})\nType : {kind}\n\n",
     t.y, t.mo, t.d, t.h, t.mi, t.s, cfg.version, profile()
   );
   body(&mut c);
@@ -547,7 +547,7 @@ mod tests {
 
   #[test]
   fn purge_et_liste() {
-    let d = std::env::temp_dir().join(format!("ecoaudit-crashlog-test-{}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("luca-audit-crashlog-test-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(&d).unwrap();
     for i in 0..25 {

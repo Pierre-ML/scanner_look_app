@@ -20,7 +20,7 @@ const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) =>
 log('1/5 Compilation Astro (dépendances serveur embarquées)...');
 const astroBin = path.join(root, 'node_modules', 'astro', 'bin', 'astro.mjs');
 const build = spawnSync(process.execPath, [astroBin, 'build'], {
-  cwd: root, stdio: 'inherit', env: { ...process.env, ECOAUDIT_DESKTOP: '1' },
+  cwd: root, stdio: 'inherit', env: { ...process.env, LUCAAUDIT_DESKTOP: '1' },
 });
 if (build.status !== 0) fail('astro build a échoué.');
 
@@ -41,14 +41,14 @@ log('2a/5 Neutralisation des chemins absolus de la machine de build...');
   const parts = root.split(/[\\/]+/).filter(Boolean);
   const mk = (sep, prefix) => new RegExp(prefix + parts.map(esc).join(sep), 'gi');
   const rules = [
-    [mk('(?:\\\\\\\\|\\\\|/)', 'file:///'), 'file:///C:/ecoaudit-build'],
-    [mk('\\\\\\\\', ''), 'C:\\\\ecoaudit-build'],
-    [mk('\\\\(?!\\\\)', ''), 'C:\\ecoaudit-build'],
-    [mk('/', ''), 'C:/ecoaudit-build'],
+    [mk('(?:\\\\\\\\|\\\\|/)', 'file:///'), 'file:///C:/luca-audit-build'],
+    [mk('\\\\\\\\', ''), 'C:\\\\luca-audit-build'],
+    [mk('\\\\(?!\\\\)', ''), 'C:\\luca-audit-build'],
+    [mk('/', ''), 'C:/luca-audit-build'],
   ];
   // Filet : tout préfixe de dossier utilisateur restant
   const userRe = /[A-Za-z]:(\\\\|\\|\/)Users(\\\\|\\|\/)[^\\/"'`\s:*?<>|]+/gi;
-  const userRepl = (sep) => 'C:' + sep + 'ecoaudit-build';
+  const userRepl = (sep) => 'C:' + sep + 'luca-audit-build';
   let safety = 0;
   let n = 0;
   for (const f of walk(appDir)) {
@@ -135,7 +135,7 @@ if (!same) fs.copyFileSync(process.execPath, nodeDest);
 
 // e. Auto-test hors du projet (sans node_modules)
 log('5/5 Auto-test autonome...');
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ecoaudit-selftest-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'luca-audit-selftest-'));
 const tmpApp = path.join(tmp, 'app');
 const tmpMesure = path.join(tmp, 'mesure');
 const tmpCwd = path.join(tmp, 'cwd');
