@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Luca-Audit",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "identifier": "com.luca-audit.desktop",
   "build": {
     "frontendDist": "../src-tauri/loader",
